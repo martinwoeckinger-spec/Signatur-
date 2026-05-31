@@ -63,6 +63,13 @@ def _cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_serve(args: argparse.Namespace) -> int:
+    from .web import DEFAULT_INPUT, serve
+    serve(host=args.host, port=args.port,
+          input_dir=args.input or str(DEFAULT_INPUT), crm=args.crm)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="signatur",
@@ -90,6 +97,15 @@ def build_parser() -> argparse.ArgumentParser:
                      help="Absenderadresse (sonst SIGNATUR_SMTP_FROM/USER).")
     run.add_argument("--out", default="out", help="Ausgabeordner (Default: out).")
     run.set_defaults(func=_cmd_run)
+
+    serve = sub.add_parser("serve", help="Web-Oberfläche zum Vorführen starten.")
+    serve.add_argument("--host", default="127.0.0.1", help="Host (Default: 127.0.0.1).")
+    serve.add_argument("--port", type=int, default=8000, help="Port (Default: 8000).")
+    serve.add_argument("--input", default=None,
+                       help="Start-Eingabeordner (Default: samples).")
+    serve.add_argument("--crm", default="mock", choices=["mock", "sap"],
+                       help="CRM-Backend (Default: mock).")
+    serve.set_defaults(func=_cmd_serve)
     return parser
 
 

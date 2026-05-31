@@ -49,6 +49,28 @@ und im Report vermerkt.
 
 ---
 
+## Weboberfläche (zum Vorführen)
+
+Schlanke Demo-UI auf Basis der Standardbibliothek (kein Flask o. ä.):
+
+```bash
+python -m signatur serve --port 8000      # dann http://127.0.0.1:8000 öffnen
+```
+
+Funktionen:
+- Dashboard mit Kennzahlen (verarbeitet / neue Kontakte / mit Änderungen)
+- Pro-Kontakt-Karten: **aus der Signatur extrahierte Felder** + **Abweichungen
+  zum CRM** (Diff) + Business-Signale, sortiert nach Handlungsbedarf
+- **Live-Vorschau der Hinweis-Mail** (HTML)
+- **Upload** von `.eml`/`.msg` direkt im Browser
+- JSON-Endpunkt `/api/result.json`
+
+Statischer Export (eine eigenständige HTML-Datei, ohne laufenden Server):
+
+```bash
+python -c "from signatur.web import export_static; export_static('out/dashboard.html','samples','mock')"
+```
+
 ## Projektstruktur
 
 ```
@@ -58,7 +80,9 @@ signatur/
   reconciler.py          # Signatur ↔ CRM vergleichen -> Abweichungen + Signale
   notifier.py            # Hinweis-Mail (Text/HTML) + Gmail-Draft-Payload bauen
   pipeline.py            # Orchestrierung Ende-zu-Ende
-  cli.py / __main__.py   # CLI-Einstieg (python -m signatur ...)
+  sender.py              # SMTP-Versand (MIME Text+HTML)
+  web.py                 # Web-Oberfläche (stdlib http.server) + Static-Export
+  cli.py / __main__.py   # CLI-Einstieg (python -m signatur run|serve)
   models.py              # Datenmodelle (dataclasses)
   crm/
     base.py              # CrmClient-Interface (find_contact)
