@@ -10,6 +10,7 @@ from . import __version__
 from .crm import get_client
 from .notifier import build_notification
 from .pipeline import run_pipeline
+from .sender import get_sender
 
 
 def _cmd_run(args: argparse.Namespace) -> int:
@@ -31,6 +32,19 @@ def _cmd_run(args: argparse.Namespace) -> int:
         json.dumps(draft.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8"
     )
 
+    # Optionaler echter Versand per SMTP
+    send_result: dict | None = None
+    if args.send == "smtp":
+        if not recipients:
+            print("FEHLER: --send smtp benötigt --to <empfänger>.", file=sys.stderr)
+            return 2
+        sender = get_sender("smtp", host=args.smtp_host or "",
+                            from_addr=args.smtp_from or "")
+        send_result = sender.send(draft)
+        (out_dir / "send_result.json").write_text(
+            json.dumps(send_result, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+
     summary = report.to_dict()["summary"]
     print(f"CRM-Backend : {crm_client.name}")
     print(f"Verarbeitet : {summary['processed']}")
@@ -41,6 +55,11 @@ def _cmd_run(args: argparse.Namespace) -> int:
     print("  - reconciliation.json (strukturiertes Ergebnis)")
     print("  - notification.md / .html (Hinweis-Vorschau)")
     print("  - draft.json (Payload für den Gmail-Entwurf)")
+    if send_result:
+        print(f"\nVersand (SMTP): {send_result['status']} an "
+              f"{', '.join(send_result['to'])}")
+        print(f"  Message-ID: {send_result['message_id']}")
+        print("  - send_result.json (Versandprotokoll)")
     return 0
 
 
@@ -63,6 +82,12 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--to", default="",
                      help="Empfänger des Hinweises (Komma-getrennt).")
     run.add_argument("--subject", default=None, help="Betreff des Hinweises (optional).")
+    run.add_argument("--send", default="none", choices=["none", "smtp"],
+                     help="Versand: 'none' (nur Dateien) oder 'smtp' (echter Versand).")
+    run.add_argument("--smtp-host", default=None,
+                     help="SMTP-Host (sonst SIGNATUR_SMTP_HOST).")
+    run.add_argument("--smtp-from", default=None,
+                     help="Absenderadresse (sonst SIGNATUR_SMTP_FROM/USER).")
     run.add_argument("--out", default="out", help="Ausgabeordner (Default: out).")
     run.set_defaults(func=_cmd_run)
     return parser

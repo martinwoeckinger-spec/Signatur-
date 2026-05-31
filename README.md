@@ -97,9 +97,37 @@ Umschalten per CLI: `--crm mock` (Default) oder `--crm sap`.
 
 ## Versand des Hinweises
 
-Der Workflow erzeugt **keinen** automatischen Versand. `notifier.py` baut ein
-Draft-Payload (`to`, `subject`, `text`, `html`), das als **Gmail-Entwurf**
-angelegt wird — Freigabe und Versand bleiben beim Menschen.
+Zwei Wege:
+
+1. **Gmail-Entwurf (Default, Freigabe durch Mensch)** — `notifier.py` baut ein
+   Draft-Payload (`to`, `subject`, `text`, `html`), das als Gmail-Entwurf
+   angelegt wird. Versand bleibt beim Menschen.
+2. **Echter Versand per SMTP** — `signatur/sender.py` (`SmtpSender`) verschickt
+   den Hinweis als MIME-Mail (Text + HTML-Alternative). Aktivierung über die CLI:
+
+   ```bash
+   python -m signatur run --input samples --crm mock \
+     --to vertrieb@firma.de --send smtp --smtp-host smtp.firma.de
+   ```
+
+   SMTP-Konfiguration über Umgebungsvariablen:
+
+   | Variable | Bedeutung |
+   |---|---|
+   | `SIGNATUR_SMTP_HOST` | SMTP-Server (z. B. `smtp.gmail.com`) |
+   | `SIGNATUR_SMTP_PORT` | Port (Default 587 STARTTLS / 465 SSL) |
+   | `SIGNATUR_SMTP_USER` / `SIGNATUR_SMTP_PASSWORD` | Login (App-Passwort) |
+   | `SIGNATUR_SMTP_FROM` | Absenderadresse (Default: User) |
+   | `SIGNATUR_SMTP_SECURITY` | `starttls` (Default) / `ssl` / `none` |
+
+   > Hinweis: Das angebundene Gmail-MCP kann nur **Entwürfe** anlegen, nicht
+   > senden — echter Versand läuft daher über SMTP (z. B. das dedizierte Postfach).
+
+**Versand lokal testen** (ohne echte Zustellung, mit Auffang-SMTP-Server):
+
+```bash
+python scripts/smtp_send_demo.py   # sendet real per SMTP an lokalen Server & prüft Empfang
+```
 
 ---
 
