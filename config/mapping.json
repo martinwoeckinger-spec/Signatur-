@@ -1,0 +1,16 @@
+{
+  "_comment": "Mapping von internen Signatur-Feldern auf CRM-Felder. 'sap_sales_cloud' bildet auf die OData-Feldnamen der SAP-Sales-Cloud-ContactCollection ab. Werte bei Bedarf an das eigene Datenmodell anpassen.",
+  "sap_sales_cloud": {
+    "crm_id": "ObjectID",
+    "full_name": "Name",
+    "first_name": "FirstName",
+    "last_name": "LastName",
+    "job_title": "JobTitle",
+    "department": "FunctionalTitle",
+    "company": "AccountName",
+    "email": "Email",
+    "phone": "Phone",
+    "mobile": "Mobile",
+    "website": "WebSite"
+  }
+}

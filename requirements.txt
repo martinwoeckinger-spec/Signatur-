@@ -1,0 +1,5 @@
+# Kernfunktionen (.eml-Verarbeitung, Mock-CRM, Reconciler, Notifier) laufen
+# vollständig mit der Python-Standardbibliothek – keine Pflicht-Abhängigkeiten.
+
+# Optional: nur nötig, um Outlook-.msg-Dateien einzulesen.
+extract-msg>=0.48 ; python_version >= "3.8"
