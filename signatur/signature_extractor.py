@@ -167,10 +167,12 @@ def _looks_like_name(line: str) -> bool:
 def _split_name(full: str) -> tuple[str, str]:
     cleaned = re.sub(r"\b(dr|prof|dipl|mag|ing|mba|msc|bsc|ba|ma)\.?\b", "",
                      full, flags=re.I).strip()
-    parts = [p for p in re.split(r"\s+", cleaned) if p]
+    # Tokens ohne Buchstaben (z. B. uebrig gebliebene Satzzeichen) verwerfen
+    parts = [p for p in re.split(r"\s+", cleaned)
+             if p and any(ch.isalpha() for ch in p)]
     if len(parts) >= 2:
         return parts[0], " ".join(parts[1:])
-    return cleaned, ""
+    return (parts[0] if parts else cleaned), ""
 
 
 def _find_company(lines: list[str], used: set[int]) -> tuple[str, int]:

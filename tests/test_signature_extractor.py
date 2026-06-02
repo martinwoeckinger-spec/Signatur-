@@ -50,6 +50,13 @@ def test_seniority_and_decision_maker():
     assert sig.is_decision_maker is True
 
 
+def test_academic_title_name_split():
+    # "Dr." darf keinen Punkt-Token im Vornamen hinterlassen
+    from signatur.signature_extractor import _split_name
+    assert _split_name("Dr. Julia Fischer") == ("Julia", "Fischer")
+    assert _split_name("Prof. Dr. Max Mustermann") == ("Max", "Mustermann")
+
+
 def test_dash_delimiter_block():
     body = "Text\n\n-- \nJohn Doe\nCEO\nExample Inc\njohn@example.com"
     block = extract_signature_block(body)
