@@ -1,5 +1,9 @@
-# Kernfunktionen (.eml-Verarbeitung, Mock-CRM, Reconciler, Notifier) laufen
-# vollständig mit der Python-Standardbibliothek – keine Pflicht-Abhängigkeiten.
+# Kernfunktionen (.eml-Verarbeitung, Mock-CRM, Reconciler, Notifier, SMTP,
+# Weboberflaeche) laufen vollstaendig mit der Python-Standardbibliothek.
 
-# Optional: nur nötig, um Outlook-.msg-Dateien einzulesen.
-extract-msg>=0.48 ; python_version >= "3.8"
+# Fuer den Import von Outlook-.msg-Dateien (Echtdaten): pure-Python, installiert
+# sauber als Wheel. Ohne dieses Paket werden .msg-Dateien uebersprungen.
+olefile>=0.47
+
+# Optionaler Fallback-Parser fuer .msg (nur falls olefile nicht genutzt wird).
+# extract-msg>=0.48

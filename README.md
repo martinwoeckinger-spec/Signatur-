@@ -42,10 +42,17 @@ cat out/reconciliation.json        # strukturiertes Ergebnis
 cat out/notification.md            # Hinweis-Text (Vorschau des Gmail-Entwurfs)
 ```
 
-Keine externen Abhängigkeiten für `.eml` und die Demo. Für `.msg`-Dateien wird
-optional [`extract-msg`](https://pypi.org/project/extract-msg/) genutzt
-(siehe `requirements.txt`); fehlt das Paket, werden `.msg`-Dateien übersprungen
-und im Report vermerkt.
+Keine externen Abhängigkeiten für `.eml` und die Demo. Für den Import echter
+**Outlook-`.msg`-Dateien** wird [`olefile`](https://pypi.org/project/olefile/)
+(pure-Python) genutzt — einmalig installieren:
+
+```bash
+pip install -r requirements.txt   # bzw. pip install olefile
+```
+
+Fehlt `olefile`, werden `.msg`-Dateien übersprungen und im Report vermerkt
+(`.eml` funktioniert immer). Der `.msg`-Parser liest die MAPI-Properties direkt
+(Betreff, Absender aus Transport-Headern bzw. Sender-Properties, Text-/HTML-Body).
 
 ---
 
@@ -70,6 +77,29 @@ Statischer Export (eine eigenständige HTML-Datei, ohne laufenden Server):
 ```bash
 python -c "from signatur.web import export_static; export_static('out/dashboard.html','samples','mock')"
 ```
+
+## Echtdaten importieren (.eml / .msg)
+
+Reale E-Mails lassen sich direkt verarbeiten:
+
+- **`.eml`** — aus den meisten Mail-Clients per „Speichern unter" / Drag&Drop
+  (Apple Mail, Thunderbird, Gmail „Nachricht herunterladen").
+- **`.msg`** — Outlook: E-Mail markieren → „Speichern unter" → Outlook-Format
+  `.msg` (benötigt `olefile`, siehe oben).
+
+Zwei Wege:
+
+```bash
+# A) Ordner mit Echtdaten per CLI abgleichen
+python -m signatur run --input /pfad/zu/echtdaten --crm mock --out out
+
+# B) In der Weboberfläche hochladen (Drag&Drop von .eml/.msg)
+python -m signatur serve --port 8000
+```
+
+Mehrere Dateien und gemischte Formate (`.eml` + `.msg`) in einem Lauf werden
+unterstützt; nicht lesbare Dateien landen mit Begründung im Abschnitt
+„Übersprungen".
 
 ## Projektstruktur
 

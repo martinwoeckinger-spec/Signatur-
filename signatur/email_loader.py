@@ -75,35 +75,86 @@ def _load_eml(path: Path) -> LoadedEmail:
     )
 
 
-def _load_msg(path: Path) -> LoadedEmail:
-    """Lädt eine Outlook-.msg-Datei. Benötigt das optionale Paket `extract-msg`."""
-    try:
-        import extract_msg  # type: ignore
-    except ImportError as exc:  # pragma: no cover - abhängig von Umgebung
-        raise RuntimeError(
-            "Für .msg-Dateien wird das Paket 'extract-msg' benötigt "
-            "(pip install extract-msg)."
-        ) from exc
+def _msg_get_str(ole, prop_id: str) -> str:
+    """Liest eine .msg-String-Property (Unicode bevorzugt, sonst ASCII/CP1252)."""
+    for typ, dec in (("001F", "utf-16-le"), ("001E", "cp1252")):
+        entry = f"__substg1.0_{prop_id}{typ}"
+        if ole.exists(entry):
+            return ole.openstream(entry).read().decode(dec, "ignore")
+    return ""
 
-    m = extract_msg.Message(str(path))
-    from_raw = m.sender or ""
-    from_name, from_email = parseaddr(from_raw)
-    if not from_email and "@" in from_raw:
-        from_email = from_raw.strip()
+
+def _msg_get_bytes(ole, prop_id: str, typ: str = "0102") -> bytes:
+    entry = f"__substg1.0_{prop_id}{typ}"
+    return ole.openstream(entry).read() if ole.exists(entry) else b""
+
+
+def _load_msg_olefile(path: Path) -> LoadedEmail:
+    """Liest eine Outlook-.msg ueber olefile (MAPI-Property-Streams)."""
+    import olefile  # pure-python, installiert sauber als Wheel
+
+    ole = olefile.OleFileIO(str(path))
+    try:
+        subject = _msg_get_str(ole, "0037")          # PR_SUBJECT
+        body = _msg_get_str(ole, "1000")             # PR_BODY
+        html_bytes = _msg_get_bytes(ole, "1013")     # PR_HTML
+        headers = _msg_get_str(ole, "007D")          # PR_TRANSPORT_MESSAGE_HEADERS
+        sender_name = _msg_get_str(ole, "0C1A")      # PR_SENDER_NAME
+        sender_email = ""
+        for pid in ("5D01", "0C1F", "5D02", "0065"):  # SMTP-Adresse bevorzugen
+            val = _msg_get_str(ole, pid)
+            if "@" in val:
+                sender_email = val
+                break
+    finally:
+        ole.close()
 
     html_body = ""
-    try:
-        raw_html = m.htmlBody
-        if isinstance(raw_html, bytes):
-            raw_html = raw_html.decode("utf-8", "ignore")
-        html_body = raw_html or ""
-    except Exception:  # pragma: no cover
-        html_body = ""
+    if html_bytes:
+        for dec in ("utf-8", "cp1252", "latin-1"):
+            try:
+                html_body = html_bytes.decode(dec)
+                break
+            except UnicodeDecodeError:
+                continue
 
+    from_name, from_email, date = sender_name, sender_email, ""
+    if headers:
+        hmsg = email.message_from_string(headers, policy=policy.default)
+        date = hmsg.get("Date", "") or ""
+        hn, he = parseaddr(hmsg.get("From", ""))
+        if he:
+            from_name, from_email = (hn or sender_name), he
+
+    if not body and html_body:
+        body = html_to_text(html_body)
+
+    return LoadedEmail(
+        source=str(path),
+        from_name=(from_name or "").strip(),
+        from_email=(from_email or "").strip().lower(),
+        subject=(subject or "").strip(),
+        date=date or "",
+        text_body=body or "",
+        html_body=html_body or "",
+    )
+
+
+def _load_msg_extractmsg(path: Path) -> LoadedEmail:
+    """Fallback ueber das optionale Paket extract-msg."""
+    import extract_msg  # type: ignore
+
+    m = extract_msg.Message(str(path))
+    from_name, from_email = parseaddr(m.sender or "")
+    if not from_email and "@" in (m.sender or ""):
+        from_email = (m.sender or "").strip()
+    raw_html = getattr(m, "htmlBody", None)
+    if isinstance(raw_html, bytes):
+        raw_html = raw_html.decode("utf-8", "ignore")
+    html_body = raw_html or ""
     text_body = m.body or ""
     if not text_body and html_body:
         text_body = html_to_text(html_body)
-
     return LoadedEmail(
         source=str(path),
         from_name=from_name or "",
@@ -113,6 +164,23 @@ def _load_msg(path: Path) -> LoadedEmail:
         text_body=text_body or "",
         html_body=html_body or "",
     )
+
+
+def _load_msg(path: Path) -> LoadedEmail:
+    """Laedt eine Outlook-.msg. Primaer ueber olefile, Fallback extract-msg."""
+    try:
+        import olefile  # noqa: F401
+    except ImportError:
+        olefile = None  # type: ignore
+    if olefile is not None:
+        return _load_msg_olefile(path)
+    try:
+        return _load_msg_extractmsg(path)
+    except ImportError as exc:  # pragma: no cover - abhaengig von Umgebung
+        raise RuntimeError(
+            "Fuer .msg-Dateien wird 'olefile' (empfohlen) oder 'extract-msg' "
+            "benoetigt: pip install olefile"
+        ) from exc
 
 
 SUPPORTED_SUFFIXES = {".eml", ".msg"}
