@@ -70,6 +70,15 @@ def _cmd_serve(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_export(args: argparse.Namespace) -> int:
+    from .web import DEFAULT_INPUT, export_static
+    out = export_static(args.out, args.input or str(DEFAULT_INPUT), args.crm)
+    print(f"Statische HTML-Demo geschrieben: {out.resolve()} "
+          f"({out.stat().st_size} Bytes)")
+    print("Im Browser öffnen – Tabs/Ansichten funktionieren ohne Server.")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="signatur",
@@ -106,6 +115,16 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument("--crm", default="mock", choices=["mock", "sap"],
                        help="CRM-Backend (Default: mock).")
     serve.set_defaults(func=_cmd_serve)
+
+    export = sub.add_parser("export",
+                            help="Eigenständige HTML-Demo mit Daten erzeugen.")
+    export.add_argument("--input", default=None,
+                        help="Eingabeordner (.eml/.msg; Default: samples).")
+    export.add_argument("--crm", default="mock", choices=["mock", "sap"],
+                        help="CRM-Backend (Default: mock).")
+    export.add_argument("--out", default="docs/demo.html",
+                        help="Zieldatei (Default: docs/demo.html).")
+    export.set_defaults(func=_cmd_export)
     return parser
 
 

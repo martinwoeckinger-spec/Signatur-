@@ -72,11 +72,14 @@ Funktionen:
 - **Upload** von `.eml`/`.msg` direkt im Browser
 - JSON-Endpunkt `/api/result.json`
 
-Statischer Export (eine eigenständige HTML-Datei, ohne laufenden Server):
+**Eigenständige HTML-Demo** (eine Datei, ohne Server – zum Vorführen/Verschicken):
 
 ```bash
-python -c "from signatur.web import export_static; export_static('out/dashboard.html','samples','mock')"
+python -m signatur export --input samples --crm mock --out docs/demo.html
 ```
+
+Eine vorgenerierte Version mit Demodaten liegt unter [`docs/demo.html`](docs/demo.html)
+(einfach im Browser öffnen – Tabs und Ansichten funktionieren ohne Backend).
 
 ## Echtdaten importieren (.eml / .msg)
 

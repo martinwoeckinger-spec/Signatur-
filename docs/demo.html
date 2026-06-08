@@ -1,0 +1,333 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Signatur-Sync · CRM-Abgleich</title><style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f4f5f7; --surface:#ffffff; --surface-2:#f8f9fb; --surface-3:#f1f3f6;
+  --border:#e4e7ec; --border-strong:#d4d8de;
+  --text:#1a2233; --muted:#69707d; --faint:#9aa1ad;
+  --accent:#4f46e5; --accent-d:#4338ca; --accent-soft:#eef0fe;
+  --new:#e11d48; --new-soft:#fdeef1; --upd:#2563eb; --upd-soft:#eaf1fe;
+  --ok:#0f9d6e; --ok-soft:#e7f6f0; --warn:#b45309; --warn-soft:#fdf3e6;
+  --radius:14px; --radius-s:10px;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.08);
+  --shadow-lg:0 6px 24px rgba(16,24,40,.10);
+  --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+html{font-size:15px}
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--text);
+  line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:var(--accent);text-decoration:none}
+h1,h2,h3,h4{margin:0;font-weight:650;letter-spacing:-.01em}
+.muted{color:var(--muted)}
+
+/* App-Bar */
+.appbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;height:60px;padding:0 24px;
+  background:rgba(255,255,255,.85);backdrop-filter:saturate(1.4) blur(8px);
+  border-bottom:1px solid var(--border)}
+.brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:16px}
+.brand .logo{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#6366f1,#4338ca);color:#fff;font-size:16px;
+  box-shadow:var(--shadow)}
+.brand small{display:block;font-weight:500;color:var(--muted);font-size:11.5px;
+  letter-spacing:.02em;margin-top:-2px}
+.appbar .env{font-size:12px;color:var(--muted);background:var(--surface-3);
+  border:1px solid var(--border);padding:5px 11px;border-radius:20px}
+
+/* Layout */
+.layout{max-width:1240px;margin:0 auto;padding:24px;display:grid;
+  grid-template-columns:286px 1fr;gap:24px;align-items:start}
+@media(max-width:940px){.layout{grid-template-columns:1fr;padding:16px}}
+
+/* Sidebar */
+.sidebar{position:sticky;top:84px;display:flex;flex-direction:column;gap:16px}
+@media(max-width:940px){.sidebar{position:static}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow)}
+.panel-h{padding:14px 16px 0;font-size:11px;font-weight:700;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--faint)}
+.panel-b{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;font-weight:550}
+.field input,.field select{width:100%;padding:9px 11px;border:1px solid var(--border-strong);
+  border-radius:var(--radius-s);font-size:13.5px;font-family:inherit;background:var(--surface);
+  color:var(--text);transition:border .15s,box-shadow .15s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  padding:10px 14px;border:0;border-radius:var(--radius-s);font-size:14px;font-weight:600;
+  font-family:inherit;cursor:pointer;transition:filter .15s,background .15s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-d)}
+.btn-ghost{background:var(--surface);color:var(--accent);border:1px solid var(--border-strong)}
+.btn-ghost:hover{background:var(--accent-soft)}
+.dropzone{border:1.5px dashed var(--border-strong);border-radius:var(--radius-s);
+  padding:16px;text-align:center;color:var(--muted);font-size:12.5px;background:var(--surface-2);
+  cursor:pointer;transition:border .15s,background .15s}
+.dropzone:hover{border-color:var(--accent);background:var(--accent-soft)}
+.dropzone input{display:none}
+.dropzone .ic{font-size:20px;display:block;margin-bottom:4px}
+.dropname{font-size:12px;color:var(--accent);margin-top:2px;font-weight:600}
+.legend{display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--muted)}
+.legend .row{display:flex;align-items:center;gap:9px}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.dot.new{background:var(--new)}.dot.upd{background:var(--upd)}.dot.ok{background:var(--ok)}
+
+/* Content */
+.content{display:flex;flex-direction:column;gap:18px;min-width:0}
+.reco{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:var(--radius);
+  background:linear-gradient(120deg,#eef0fe,#f6f4ff);border:1px solid #e0e3fb}
+.reco.calm{background:var(--ok-soft);border-color:#cdeede}
+.reco .emoji{font-size:24px;flex:none}
+.reco h2{font-size:16px;margin-bottom:2px}
+.reco p{margin:0;font-size:13.5px;color:var(--muted)}
+
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+@media(max-width:620px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .n{font-size:26px;font-weight:750;letter-spacing:-.02em}
+.kpi .l{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:2px}
+.kpi.new .n{color:var(--new)}.kpi.upd .n{color:var(--upd)}.kpi.ok .n{color:var(--ok)}
+
+/* Tabs */
+.tabs{display:inline-flex;gap:4px;padding:4px;background:var(--surface-3);
+  border:1px solid var(--border);border-radius:11px;align-self:flex-start}
+.tab{border:0;background:transparent;padding:8px 15px;border-radius:8px;font-size:13.5px;
+  font-weight:600;color:var(--muted);cursor:pointer;font-family:inherit;display:flex;
+  align-items:center;gap:7px}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.tab .cnt{font-size:11px;background:var(--surface-3);color:var(--muted);padding:1px 7px;
+  border-radius:9px;font-weight:700}
+.tab.active .cnt{background:var(--accent-soft);color:var(--accent-d)}
+
+/* Gruppen */
+.group{margin-top:4px}
+.group-h{display:flex;align-items:center;gap:9px;margin:18px 2px 10px}
+.group-h .gdot{width:8px;height:8px;border-radius:50%}
+.group-h.new .gdot{background:var(--new)}.group-h.upd .gdot{background:var(--upd)}
+.group-h.ok .gdot{background:var(--ok)}
+.group-h h3{font-size:13.5px}
+.group-h .gc{font-size:11.5px;color:var(--muted);background:var(--surface-3);
+  border:1px solid var(--border);padding:1px 8px;border-radius:9px;font-weight:700}
+details.group summary{list-style:none;cursor:pointer}
+details.group summary::-webkit-details-marker{display:none}
+
+/* Kontakt-Karte */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px 18px;margin-bottom:12px}
+.card-top{display:flex;align-items:center;gap:13px;margin-bottom:14px}
+.avatar{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;
+  font-weight:700;font-size:15px;color:#fff}
+.avatar.new{background:linear-gradient(135deg,#fb7185,#e11d48)}
+.avatar.upd{background:linear-gradient(135deg,#60a5fa,#2563eb)}
+.avatar.ok{background:linear-gradient(135deg,#34d399,#0f9d6e)}
+.card-id{flex:1;min-width:0}
+.card-id h4{font-size:15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card-id .sub{font-size:12.5px;color:var(--muted);margin-top:1px;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap}
+.pill{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;flex:none}
+.pill.new{background:var(--new-soft);color:var(--new)}
+.pill.upd{background:var(--upd-soft);color:var(--upd)}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:6px;
+  background:var(--warn-soft);color:var(--warn)}
+
+.card-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:20px}
+@media(max-width:680px){.card-body{grid-template-columns:1fr}}
+.block-h{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--faint);margin-bottom:9px}
+.kv{display:grid;grid-template-columns:84px 1fr;gap:4px 10px;font-size:13px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;overflow:hidden;text-overflow:ellipsis}
+
+.reco-box{border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:var(--radius-s);background:var(--surface-2);padding:12px 14px}
+.reco-box.new{border-left-color:var(--new)}
+.reco-box.upd{border-left-color:var(--upd)}
+.reco-box.ok{border-left-color:var(--ok)}
+.reco-box .lead{font-size:13px;font-weight:650;margin-bottom:9px;display:flex;
+  align-items:center;gap:7px}
+table.diff{border-collapse:collapse;width:100%;font-size:12.5px}
+table.diff th{text-align:left;padding:5px 8px;color:var(--faint);font-weight:600;
+  border-bottom:1px solid var(--border)}
+table.diff td{padding:6px 8px;border-bottom:1px solid var(--surface-3);vertical-align:top}
+table.diff tr:last-child td{border-bottom:0}
+.old{color:var(--faint);text-decoration:line-through}
+.arrow{color:var(--faint);padding:0 4px}
+.newv{color:var(--text);font-weight:650}
+.chips{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.chip{font-size:12.5px;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:7px 10px;color:var(--text)}
+.ok-note{font-size:13px;color:var(--ok);display:flex;align-items:center;gap:7px}
+
+/* Mail-Vorschau */
+.mailwrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden}
+.mailbar{display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid var(--border);
+  background:var(--surface-2);font-size:12.5px;color:var(--muted)}
+.mailbar .dotrow{display:flex;gap:6px}
+.mailbar .d{width:10px;height:10px;border-radius:50%}
+.mailbar .d1{background:#ff6058}.mailbar .d2{background:#ffbd2e}.mailbar .d3{background:#28ca42}
+.mailbody{padding:20px;max-height:620px;overflow:auto}
+
+/* Empty / Skip */
+.empty{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:40px 28px;text-align:center}
+.empty .big{font-size:34px;margin-bottom:8px}
+.empty h2{font-size:18px;margin-bottom:6px}
+.empty p{color:var(--muted);margin:0 auto 18px;max-width:440px;font-size:14px}
+.steps{display:inline-flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.step{display:flex;align-items:center;gap:8px;font-size:13px;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:20px;padding:7px 14px}
+.step .num{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:11px;font-weight:700;display:grid;place-items:center}
+.skip{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:12px 16px;font-size:12.5px;color:var(--muted)}
+.note{font-size:12px;color:var(--faint);margin-top:8px}
+[hidden]{display:none!important}
+</style></head>
+<body>
+<div class="appbar">
+  <div class="brand"><span class="logo">📇</span>
+    <span>Signatur-Sync<small>E-Mail-Signaturen ↔ CRM</small></span></div>
+  <div class="env">Demo · Mock-CRM</div>
+</div>
+<div class="layout"><aside class="sidebar">
+<div class="panel"><div class="panel-h">Datenquelle</div><div class="panel-b"><p class="muted" style="font-size:12.5px;margin:0">Statischer Export. Interaktiv mit <code>python -m signatur serve</code>.</p></div></div>
+
+<div class="panel"><div class="panel-h">Legende</div><div class="panel-b">
+  <div class="legend">
+    <div class="row"><span class="dot new"></span> Neu im CRM anlegen (Lead)</div>
+    <div class="row"><span class="dot upd"></span> Im CRM aktualisieren</div>
+    <div class="row"><span class="dot ok"></span> Aktuell – keine Aktion</div>
+  </div></div></div>
+</aside><main class="content">
+<div class="reco"><span class="emoji">🎯</span><div><h2>Handlungsbedarf: 4 Empfehlung(en)</h2><p><b>1</b> neue·n Kontakt(e) anlegen · <b>3</b> Kontakt(e) aktualisieren. Details unten unter „Empfehlungen".</p></div></div>
+<div class="kpis">
+<div class="kpi"><div class="n">5</div><div class="l">VERARBEITET</div></div>
+<div class="kpi new"><div class="n">1</div><div class="l">NEU ANLEGEN</div></div>
+<div class="kpi upd"><div class="n">3</div><div class="l">AKTUALISIEREN</div></div>
+<div class="kpi ok"><div class="n">1</div><div class="l">AKTUELL</div></div>
+</div>
+<nav class="tabs">
+  <button class="tab active" data-target="reco" onclick="sigTab('reco')">
+    🎯 Empfehlungen <span class="cnt">4</span></button>
+  <button class="tab" data-target="all" onclick="sigTab('all')">
+    👥 Alle Kontakte <span class="cnt">5</span></button>
+  <button class="tab" data-target="mail" onclick="sigTab('mail')">✉️ Hinweis-Mail</button>
+</nav>
+<div data-pane="reco"><div class="group"><div class="group-h new"><span class="gdot"></span><h3>Neu im CRM anlegen</h3><span class="gc">1</span></div><div class="card">
+  <div class="card-top">
+    <div class="avatar new">JF</div>
+    <div class="card-id">
+      <h4>Dr. Julia Fischer <span class="tag">Entscheider:in</span></h4>
+      <div class="sub">Chief Technology Officer (CTO) · Helios Systems GmbH · 02_julia_fischer_neuer_kontakt.eml</div>
+    </div>
+    <span class="pill new">Neuer Kontakt</span>
+  </div>
+  <div class="card-body"><div><div class="block-h">Aus Signatur extrahiert</div><dl class="kv"><dt>Name</dt><dd>Dr. Julia Fischer</dd><dt>Position</dt><dd>Chief Technology Officer (CTO) · C-Level</dd><dt>Firma</dt><dd>Helios Systems GmbH</dd><dt>E-Mail</dt><dd>julia.fischer@helios-systems.com</dd><dt>Telefon</dt><dd>+49 30 9000 200</dd><dt>Mobil</dt><dd>+49 160 4455667</dd><dt>Website</dt><dd>https://www.helios-systems.com</dd><dt>LinkedIn</dt><dd>https://www.linkedin.com/in/julia-fischer-cto</dd><dt>Standort</dt><dd>Berlin</dd></dl></div><div class="reco-box new"><div class="lead">🆕 Empfehlung: als neuen Kontakt/Lead anlegen</div><table class="diff"><tr><th>Feld</th><th>CRM → Signatur</th></tr><tr><td>Position</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">Chief Technology Officer (CTO)</span></td></tr><tr><td>Firma</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">Helios Systems GmbH</span></td></tr><tr><td>Telefon</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">+49 30 9000 200</span></td></tr><tr><td>Mobil</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">+49 160 4455667</span></td></tr><tr><td>Website</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">https://www.helios-systems.com</span></td></tr></table><div class="chips"><div class="chip">🆕 Kontakt nicht im CRM gefunden – als neuen Lead/Kontakt anlegen.</div><div class="chip">⭐ Neuer Kontakt ist laut Signatur Entscheider:in.</div></div></div></div>
+</div></div><div class="group"><div class="group-h upd"><span class="gdot"></span><h3>Im CRM aktualisieren</h3><span class="gc">3</span></div><div class="card">
+  <div class="card-top">
+    <div class="avatar upd">AB</div>
+    <div class="card-id">
+      <h4>Anna Berger <span class="tag">Entscheider:in</span></h4>
+      <div class="sub">Head of Consulting · Muster Tech GmbH · 01_anna_berger_jobwechsel.eml</div>
+    </div>
+    <span class="pill upd">Aktualisierung</span>
+  </div>
+  <div class="card-body"><div><div class="block-h">Aus Signatur extrahiert</div><dl class="kv"><dt>Name</dt><dd>Anna Berger</dd><dt>Position</dt><dd>Head of Consulting · Leitung</dd><dt>Firma</dt><dd>Muster Tech GmbH</dd><dt>E-Mail</dt><dd>anna.berger@muster-tech.de</dd><dt>Telefon</dt><dd>+49 89 1234-100</dd><dt>Mobil</dt><dd>+49 171 998 7766</dd><dt>Website</dt><dd>www.muster-tech.de</dd><dt>Standort</dt><dd>Muenchen</dd></dl></div><div class="reco-box upd"><div class="lead">✏️ Empfehlung: Stammdaten im CRM aktualisieren</div><table class="diff"><tr><th>Feld</th><th>CRM → Signatur</th></tr><tr><td>Position</td><td><span class="old">Senior Consultant</span><span class="arrow">→</span><span class="newv">Head of Consulting</span></td></tr><tr><td>Mobil</td><td><span class="old">+49 170 111 2233</span><span class="arrow">→</span><span class="newv">+49 171 998 7766</span></td></tr></table><div class="chips"><div class="chip">📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren. Kontakt ist jetzt Entscheider:in – für Vertrieb relevant.</div><div class="chip">☎️ Geänderte Telefonnummer – Stammdaten aktualisieren.</div></div></div></div>
+</div><div class="card">
+  <div class="card-top">
+    <div class="avatar upd">MR</div>
+    <div class="card-id">
+      <h4>Marco Rossi </h4>
+      <div class="sub">Senior Account Manager · Helvetia Solutions AG · 04_marco_rossi_neue_nummer.eml</div>
+    </div>
+    <span class="pill upd">Aktualisierung</span>
+  </div>
+  <div class="card-body"><div><div class="block-h">Aus Signatur extrahiert</div><dl class="kv"><dt>Name</dt><dd>Marco Rossi</dd><dt>Position</dt><dd>Senior Account Manager · Management</dd><dt>Firma</dt><dd>Helvetia Solutions AG</dd><dt>E-Mail</dt><dd>marco.rossi@helvetia-solutions.ch</dd><dt>Telefon</dt><dd>+41 44 200 30 40</dd><dt>Mobil</dt><dd>+41 79 555 12 34</dd><dt>Website</dt><dd>www.helvetia-solutions.ch</dd></dl></div><div class="reco-box upd"><div class="lead">✏️ Empfehlung: Stammdaten im CRM aktualisieren</div><table class="diff"><tr><th>Feld</th><th>CRM → Signatur</th></tr><tr><td>Position</td><td><span class="old">Account Manager</span><span class="arrow">→</span><span class="newv">Senior Account Manager</span></td></tr><tr><td>Mobil</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">+41 79 555 12 34</span></td></tr></table><div class="chips"><div class="chip">📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren.</div></div></div></div>
+</div><div class="card">
+  <div class="card-top">
+    <div class="avatar upd">SB</div>
+    <div class="card-id">
+      <h4>Sandra Bauer <span class="tag">Entscheider:in</span></h4>
+      <div class="sub">Head of Engineering · CloudScale AG · 05_sandra_bauer_firmenwechsel.eml</div>
+    </div>
+    <span class="pill upd">Aktualisierung</span>
+  </div>
+  <div class="card-body"><div><div class="block-h">Aus Signatur extrahiert</div><dl class="kv"><dt>Name</dt><dd>Sandra Bauer</dd><dt>Position</dt><dd>Head of Engineering · Leitung</dd><dt>Firma</dt><dd>CloudScale AG</dd><dt>E-Mail</dt><dd>sandra.bauer@technovision.de</dd><dt>Telefon</dt><dd>+49 30 9911 200</dd><dt>Mobil</dt><dd>+49 151 2233445</dd><dt>Website</dt><dd>www.cloudscale.ag</dd></dl></div><div class="reco-box upd"><div class="lead">✏️ Empfehlung: Stammdaten im CRM aktualisieren</div><table class="diff"><tr><th>Feld</th><th>CRM → Signatur</th></tr><tr><td>Position</td><td><span class="old">Senior Developer</span><span class="arrow">→</span><span class="newv">Head of Engineering</span></td></tr><tr><td>Firma</td><td><span class="old">TechnoVision GmbH</span><span class="arrow">→</span><span class="newv">CloudScale AG</span></td></tr><tr><td>Telefon</td><td><span class="old">+49 30 7788 100</span><span class="arrow">→</span><span class="newv">+49 30 9911 200</span></td></tr><tr><td>Website</td><td><span class="old">www.technovision.de</span><span class="arrow">→</span><span class="newv">www.cloudscale.ag</span></td></tr></table><div class="chips"><div class="chip">🔁 Firmenwechsel erkannt – Kontakt prüfen (mögliche neue Opportunity beim neuen Arbeitgeber bzw. Risiko beim alten Account).</div><div class="chip">📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren. Kontakt ist jetzt Entscheider:in – für Vertrieb relevant.</div><div class="chip">☎️ Geänderte Telefonnummer – Stammdaten aktualisieren.</div></div></div></div>
+</div></div></div>
+<div data-pane="all" hidden><div class="group"><div class="group-h new"><span class="gdot"></span><h3>Neu im CRM anlegen</h3><span class="gc">1</span></div><div class="card">
+  <div class="card-top">
+    <div class="avatar new">JF</div>
+    <div class="card-id">
+      <h4>Dr. Julia Fischer <span class="tag">Entscheider:in</span></h4>
+      <div class="sub">Chief Technology Officer (CTO) · Helios Systems GmbH · 02_julia_fischer_neuer_kontakt.eml</div>
+    </div>
+    <span class="pill new">Neuer Kontakt</span>
+  </div>
+  <div class="card-body"><div><div class="block-h">Aus Signatur extrahiert</div><dl class="kv"><dt>Name</dt><dd>Dr. Julia Fischer</dd><dt>Position</dt><dd>Chief Technology Officer (CTO) · C-Level</dd><dt>Firma</dt><dd>Helios Systems GmbH</dd><dt>E-Mail</dt><dd>julia.fischer@helios-systems.com</dd><dt>Telefon</dt><dd>+49 30 9000 200</dd><dt>Mobil</dt><dd>+49 160 4455667</dd><dt>Website</dt><dd>https://www.helios-systems.com</dd><dt>LinkedIn</dt><dd>https://www.linkedin.com/in/julia-fischer-cto</dd><dt>Standort</dt><dd>Berlin</dd></dl></div><div class="reco-box new"><div class="lead">🆕 Empfehlung: als neuen Kontakt/Lead anlegen</div><table class="diff"><tr><th>Feld</th><th>CRM → Signatur</th></tr><tr><td>Position</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">Chief Technology Officer (CTO)</span></td></tr><tr><td>Firma</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">Helios Systems GmbH</span></td></tr><tr><td>Telefon</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">+49 30 9000 200</span></td></tr><tr><td>Mobil</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">+49 160 4455667</span></td></tr><tr><td>Website</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">https://www.helios-systems.com</span></td></tr></table><div class="chips"><div class="chip">🆕 Kontakt nicht im CRM gefunden – als neuen Lead/Kontakt anlegen.</div><div class="chip">⭐ Neuer Kontakt ist laut Signatur Entscheider:in.</div></div></div></div>
+</div></div><div class="group"><div class="group-h upd"><span class="gdot"></span><h3>Im CRM aktualisieren</h3><span class="gc">3</span></div><div class="card">
+  <div class="card-top">
+    <div class="avatar upd">AB</div>
+    <div class="card-id">
+      <h4>Anna Berger <span class="tag">Entscheider:in</span></h4>
+      <div class="sub">Head of Consulting · Muster Tech GmbH · 01_anna_berger_jobwechsel.eml</div>
+    </div>
+    <span class="pill upd">Aktualisierung</span>
+  </div>
+  <div class="card-body"><div><div class="block-h">Aus Signatur extrahiert</div><dl class="kv"><dt>Name</dt><dd>Anna Berger</dd><dt>Position</dt><dd>Head of Consulting · Leitung</dd><dt>Firma</dt><dd>Muster Tech GmbH</dd><dt>E-Mail</dt><dd>anna.berger@muster-tech.de</dd><dt>Telefon</dt><dd>+49 89 1234-100</dd><dt>Mobil</dt><dd>+49 171 998 7766</dd><dt>Website</dt><dd>www.muster-tech.de</dd><dt>Standort</dt><dd>Muenchen</dd></dl></div><div class="reco-box upd"><div class="lead">✏️ Empfehlung: Stammdaten im CRM aktualisieren</div><table class="diff"><tr><th>Feld</th><th>CRM → Signatur</th></tr><tr><td>Position</td><td><span class="old">Senior Consultant</span><span class="arrow">→</span><span class="newv">Head of Consulting</span></td></tr><tr><td>Mobil</td><td><span class="old">+49 170 111 2233</span><span class="arrow">→</span><span class="newv">+49 171 998 7766</span></td></tr></table><div class="chips"><div class="chip">📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren. Kontakt ist jetzt Entscheider:in – für Vertrieb relevant.</div><div class="chip">☎️ Geänderte Telefonnummer – Stammdaten aktualisieren.</div></div></div></div>
+</div><div class="card">
+  <div class="card-top">
+    <div class="avatar upd">MR</div>
+    <div class="card-id">
+      <h4>Marco Rossi </h4>
+      <div class="sub">Senior Account Manager · Helvetia Solutions AG · 04_marco_rossi_neue_nummer.eml</div>
+    </div>
+    <span class="pill upd">Aktualisierung</span>
+  </div>
+  <div class="card-body"><div><div class="block-h">Aus Signatur extrahiert</div><dl class="kv"><dt>Name</dt><dd>Marco Rossi</dd><dt>Position</dt><dd>Senior Account Manager · Management</dd><dt>Firma</dt><dd>Helvetia Solutions AG</dd><dt>E-Mail</dt><dd>marco.rossi@helvetia-solutions.ch</dd><dt>Telefon</dt><dd>+41 44 200 30 40</dd><dt>Mobil</dt><dd>+41 79 555 12 34</dd><dt>Website</dt><dd>www.helvetia-solutions.ch</dd></dl></div><div class="reco-box upd"><div class="lead">✏️ Empfehlung: Stammdaten im CRM aktualisieren</div><table class="diff"><tr><th>Feld</th><th>CRM → Signatur</th></tr><tr><td>Position</td><td><span class="old">Account Manager</span><span class="arrow">→</span><span class="newv">Senior Account Manager</span></td></tr><tr><td>Mobil</td><td><span class="muted">leer</span><span class="arrow">→</span><span class="newv">+41 79 555 12 34</span></td></tr></table><div class="chips"><div class="chip">📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren.</div></div></div></div>
+</div><div class="card">
+  <div class="card-top">
+    <div class="avatar upd">SB</div>
+    <div class="card-id">
+      <h4>Sandra Bauer <span class="tag">Entscheider:in</span></h4>
+      <div class="sub">Head of Engineering · CloudScale AG · 05_sandra_bauer_firmenwechsel.eml</div>
+    </div>
+    <span class="pill upd">Aktualisierung</span>
+  </div>
+  <div class="card-body"><div><div class="block-h">Aus Signatur extrahiert</div><dl class="kv"><dt>Name</dt><dd>Sandra Bauer</dd><dt>Position</dt><dd>Head of Engineering · Leitung</dd><dt>Firma</dt><dd>CloudScale AG</dd><dt>E-Mail</dt><dd>sandra.bauer@technovision.de</dd><dt>Telefon</dt><dd>+49 30 9911 200</dd><dt>Mobil</dt><dd>+49 151 2233445</dd><dt>Website</dt><dd>www.cloudscale.ag</dd></dl></div><div class="reco-box upd"><div class="lead">✏️ Empfehlung: Stammdaten im CRM aktualisieren</div><table class="diff"><tr><th>Feld</th><th>CRM → Signatur</th></tr><tr><td>Position</td><td><span class="old">Senior Developer</span><span class="arrow">→</span><span class="newv">Head of Engineering</span></td></tr><tr><td>Firma</td><td><span class="old">TechnoVision GmbH</span><span class="arrow">→</span><span class="newv">CloudScale AG</span></td></tr><tr><td>Telefon</td><td><span class="old">+49 30 7788 100</span><span class="arrow">→</span><span class="newv">+49 30 9911 200</span></td></tr><tr><td>Website</td><td><span class="old">www.technovision.de</span><span class="arrow">→</span><span class="newv">www.cloudscale.ag</span></td></tr></table><div class="chips"><div class="chip">🔁 Firmenwechsel erkannt – Kontakt prüfen (mögliche neue Opportunity beim neuen Arbeitgeber bzw. Risiko beim alten Account).</div><div class="chip">📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren. Kontakt ist jetzt Entscheider:in – für Vertrieb relevant.</div><div class="chip">☎️ Geänderte Telefonnummer – Stammdaten aktualisieren.</div></div></div></div>
+</div></div><details class="group"><summary><div class="group-h ok"><span class="gdot"></span><h3>Aktuell – keine Aktion</h3><span class="gc">1</span></div></summary><div class="card">
+  <div class="card-top">
+    <div class="avatar ok">TK</div>
+    <div class="card-id">
+      <h4>Thomas Klein <span class="tag">Entscheider:in</span></h4>
+      <div class="sub">Vertriebsleiter · Nordwind AG · 03_thomas_klein_unveraendert.eml</div>
+    </div>
+    <span class="pill ok">Aktuell</span>
+  </div>
+  <div class="card-body"><div><div class="block-h">Aus Signatur extrahiert</div><dl class="kv"><dt>Name</dt><dd>Thomas Klein</dd><dt>Position</dt><dd>Vertriebsleiter · Leitung</dd><dt>Firma</dt><dd>Nordwind AG</dd><dt>E-Mail</dt><dd>thomas.klein@nordwind.at</dd><dt>Telefon</dt><dd>+43 1 5550 100</dd><dt>Mobil</dt><dd>+43 660 1234567</dd><dt>Website</dt><dd>www.nordwind.at</dd></dl></div><div class="reco-box ok"><div class="ok-note">✓ Signatur stimmt mit dem CRM überein – keine Aktion nötig.</div><div class="chips"><div class="chip">⭐ Entscheider:in laut Signatur – Priorisierung im Vertrieb prüfen.</div></div></div></div>
+</div></details></div>
+<div data-pane="mail" hidden><div class="mailwrap">
+  <div class="mailbar"><span class="dotrow"><span class="d d1"></span>
+    <span class="d d2"></span><span class="d d3"></span></span>
+    Vorschau · wird als Gmail-Entwurf bzw. per SMTP versendet</div>
+  <div class="mailbody"><div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#1a1a1a;line-height:1.5"><h2 style="margin:0 0 4px">Signatur-/CRM-Abgleich – Hinweis</h2><p style="color:#666;margin:0 0 12px">Datum: 2026-06-08</p><table style="border-collapse:collapse;margin-bottom:16px"><tr><td style="padding:6px 12px;background:#f3f4f6">Verarbeitet: <b>5</b></td><td style="padding:6px 12px;background:#f3f4f6">Neue Kontakte: <b>1</b></td><td style="padding:6px 12px;background:#f3f4f6">Mit Änderungen: <b>4</b></td></tr></table><div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:0 0 12px"><div style="font-weight:bold;font-size:15px">Anna Berger · Muster Tech GmbH <span style="background:#1d4ed8;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px">Aktualisierung</span></div><div style="color:#666;font-size:12px;margin-bottom:8px">Quelle: samples/01_anna_berger_jobwechsel.eml</div><table style="border-collapse:collapse;width:100%;font-size:13px"><tr style="background:#f9fafb"><th style="text-align:left;padding:4px 8px">Feld</th><th style="text-align:left;padding:4px 8px">CRM</th><th style="text-align:left;padding:4px 8px">Signatur</th></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Position/Titel</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">Senior Consultant</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">Head of Consulting</td></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Mobil</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">+49 170 111 2233</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">+49 171 998 7766</td></tr></table><ul style="margin:8px 0 0;padding-left:18px"><li>📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren. Kontakt ist jetzt Entscheider:in – für Vertrieb relevant.</li><li>☎️ Geänderte Telefonnummer – Stammdaten aktualisieren.</li></ul></div><div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:0 0 12px"><div style="font-weight:bold;font-size:15px">Dr. Julia Fischer · Helios Systems GmbH <span style="background:#b91c1c;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px">Neuer Kontakt</span></div><div style="color:#666;font-size:12px;margin-bottom:8px">Quelle: samples/02_julia_fischer_neuer_kontakt.eml</div><table style="border-collapse:collapse;width:100%;font-size:13px"><tr style="background:#f9fafb"><th style="text-align:left;padding:4px 8px">Feld</th><th style="text-align:left;padding:4px 8px">CRM</th><th style="text-align:left;padding:4px 8px">Signatur</th></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Position/Titel</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">—</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">Chief Technology Officer (CTO)</td></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Firma</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">—</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">Helios Systems GmbH</td></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Telefon</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">—</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">+49 30 9000 200</td></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Mobil</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">—</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">+49 160 4455667</td></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Website</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">—</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">https://www.helios-systems.com</td></tr></table><ul style="margin:8px 0 0;padding-left:18px"><li>🆕 Kontakt nicht im CRM gefunden – als neuen Lead/Kontakt anlegen.</li><li>⭐ Neuer Kontakt ist laut Signatur Entscheider:in.</li></ul></div><div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:0 0 12px"><div style="font-weight:bold;font-size:15px">Marco Rossi · Helvetia Solutions AG <span style="background:#1d4ed8;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px">Aktualisierung</span></div><div style="color:#666;font-size:12px;margin-bottom:8px">Quelle: samples/04_marco_rossi_neue_nummer.eml</div><table style="border-collapse:collapse;width:100%;font-size:13px"><tr style="background:#f9fafb"><th style="text-align:left;padding:4px 8px">Feld</th><th style="text-align:left;padding:4px 8px">CRM</th><th style="text-align:left;padding:4px 8px">Signatur</th></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Position/Titel</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">Account Manager</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">Senior Account Manager</td></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Mobil</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">—</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">+41 79 555 12 34</td></tr></table><ul style="margin:8px 0 0;padding-left:18px"><li>📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren.</li></ul></div><div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:0 0 12px"><div style="font-weight:bold;font-size:15px">Sandra Bauer · CloudScale AG <span style="background:#1d4ed8;color:#fff;font-size:11px;padding:2px 8px;border-radius:10px;margin-left:6px">Aktualisierung</span></div><div style="color:#666;font-size:12px;margin-bottom:8px">Quelle: samples/05_sandra_bauer_firmenwechsel.eml</div><table style="border-collapse:collapse;width:100%;font-size:13px"><tr style="background:#f9fafb"><th style="text-align:left;padding:4px 8px">Feld</th><th style="text-align:left;padding:4px 8px">CRM</th><th style="text-align:left;padding:4px 8px">Signatur</th></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Position/Titel</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">Senior Developer</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">Head of Engineering</td></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Firma</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">TechnoVision GmbH</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">CloudScale AG</td></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Telefon</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">+49 30 7788 100</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">+49 30 9911 200</td></tr><tr><td style="padding:4px 8px;border-top:1px solid #eee">Website</td><td style="padding:4px 8px;border-top:1px solid #eee;color:#9ca3af">www.technovision.de</td><td style="padding:4px 8px;border-top:1px solid #eee;font-weight:600">www.cloudscale.ag</td></tr></table><ul style="margin:8px 0 0;padding-left:18px"><li>🔁 Firmenwechsel erkannt – Kontakt prüfen (mögliche neue Opportunity beim neuen Arbeitgeber bzw. Risiko beim alten Account).</li><li>📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren. Kontakt ist jetzt Entscheider:in – für Vertrieb relevant.</li><li>☎️ Geänderte Telefonnummer – Stammdaten aktualisieren.</li></ul></div><p style="color:#888;font-size:12px">Automatisch erstellt – Entwurf zur Freigabe.</p></div></div></div></div>
+</main></div>
+<script>
+function sigTab(name){
+  document.querySelectorAll('[data-pane]').forEach(function(p){
+    p.hidden = p.getAttribute('data-pane')!==name;});
+  document.querySelectorAll('.tab').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-target')===name);});
+}
+function sigFile(inp){
+  var n = inp.files.length;
+  var el = document.getElementById('dropname');
+  if(el) el.textContent = n? (n+' Datei(en) gewählt: '+
+    Array.from(inp.files).map(function(f){return f.name}).join(', ')) : '';
+}
+</script>
+</body></html>
