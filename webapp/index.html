@@ -136,8 +136,8 @@
   function contactCard(res){
     var sig=res.signature, t=res.tone;
     var name=sig.full_name||sig.email||res.source;
-    var subBits=[sig.job_title,sig.company].filter(Boolean);
-    var sub=(subBits.join(" · ")||res.source)+" · "+res.source;
+    var subBits=[sig.job_title,sig.company,sig.email].filter(Boolean);
+    var sub=(subBits.join(" · ")||"—")+" · 📎 "+res.source;
     var pill={new:"Neuer Kontakt",upd:"Aktualisierung",ok:"Aktuell"}[t];
     var dm=sig.is_decision_maker?"<span class='dm-chip'>Entscheider:in</span>":"";
     return "<div class='contact t-"+t+"'><div class='c-top'>"+
@@ -243,9 +243,9 @@
 
   function addLoaded(loaded){
     try{
-      var r=C.analyze(loaded,CRM);
-      if(r.skipped) skipped.push({source:loaded.source,reason:r.reason});
-      else results.push(r);
+      var a=C.analyzeEmail(loaded,CRM);
+      results=results.concat(a.results);
+      skipped=skipped.concat(a.skipped);
     }catch(e){ skipped.push({source:loaded.source,reason:String(e.message||e)}); }
   }
 

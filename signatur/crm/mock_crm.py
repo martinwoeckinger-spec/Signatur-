@@ -43,6 +43,8 @@ class MockCrmClient(CrmClient):
                     phone=row.get("phone", "").strip(),
                     mobile=row.get("mobile", "").strip(),
                     website=row.get("website", "").strip(),
+                    address=row.get("address", "").strip(),
+                    linkedin=row.get("linkedin", "").strip(),
                     source=self.name,
                 )
                 if contact.email:

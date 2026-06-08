@@ -8,11 +8,11 @@ from .email_loader import iter_email_files, load_email
 from .models import ReconciliationReport
 from .notifier import NotificationDraft, build_notification
 from .reconciler import reconcile_contact
-from .signature_extractor import extract_from_email
+from .signature_extractor import extract_all_signatures
 
 
 def run_pipeline(input_path: str | Path, crm_client: CrmClient) -> ReconciliationReport:
-    """Lädt Mails, extrahiert Signaturen und gleicht gegen das CRM ab."""
+    """Lädt Mails, extrahiert **alle** Signaturen und gleicht gegen das CRM ab."""
     report = ReconciliationReport()
     for path in iter_email_files(input_path):
         try:
@@ -21,15 +21,17 @@ def run_pipeline(input_path: str | Path, crm_client: CrmClient) -> Reconciliatio
             report.skipped.append({"source": str(path), "reason": str(exc)})
             continue
 
-        sig = extract_from_email(mail)
-        if sig.is_empty():
+        signatures = extract_all_signatures(mail)
+        if not signatures:
             report.skipped.append(
                 {"source": str(path), "reason": "Keine verwertbare Signatur gefunden."}
             )
             continue
 
-        result = reconcile_contact(sig, crm_client, source=str(path))
-        report.results.append(result)
+        multi = len(signatures) > 1
+        for idx, sig in enumerate(signatures, start=1):
+            src = f"{path}#{idx}" if multi else str(path)
+            report.results.append(reconcile_contact(sig, crm_client, source=src))
     return report
 
 

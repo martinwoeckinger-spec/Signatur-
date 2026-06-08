@@ -13,13 +13,17 @@ from .models import (
 )
 
 # Felder, die verglichen werden: (intern, Anzeigename)
+# Relevant fuer den Abgleich: Position, Firma, Adresse, Website, LinkedIn
+# (Name = Identitaet, E-Mail = primaerer Schluessel); Telefon ergaenzend.
 COMPARED_FIELDS = [
     ("job_title", "Position/Titel"),
-    ("department", "Abteilung"),
     ("company", "Firma"),
+    ("address", "Adresse"),
+    ("website", "Website"),
+    ("linkedin", "LinkedIn"),
+    ("department", "Abteilung"),
     ("phone", "Telefon"),
     ("mobile", "Mobil"),
-    ("website", "Website"),
 ]
 
 
@@ -63,6 +67,12 @@ def _derive_signals(sig: Signature, crm: CrmContact,
         if sig.is_decision_maker:
             note += " Kontakt ist jetzt Entscheider:in – für Vertrieb relevant."
         signals.append(note)
+    if "address" in changed:
+        signals.append("📍 Adresse hat sich geändert – Stammdaten aktualisieren.")
+    if "website" in changed:
+        signals.append("🌐 Geänderte Website – Stammdaten aktualisieren.")
+    if "linkedin" in changed:
+        signals.append("🔗 LinkedIn-Profil aktualisieren.")
     if "phone" in changed or "mobile" in changed:
         signals.append("☎️ Geänderte Telefonnummer – Stammdaten aktualisieren.")
     if "department" in changed:

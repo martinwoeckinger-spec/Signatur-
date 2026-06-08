@@ -11,6 +11,8 @@
     "email": "Email",
     "phone": "Phone",
     "mobile": "Mobile",
-    "website": "WebSite"
+    "website": "WebSite",
+    "address": "FormattedPostalAddress",
+    "linkedin": "LinkedInURL"
   }
 }

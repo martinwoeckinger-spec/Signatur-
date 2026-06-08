@@ -1,5 +1,5 @@
-crm_id,full_name,first_name,last_name,job_title,department,company,email,phone,mobile,website
-C-1001,Anna Berger,Anna,Berger,Senior Consultant,Consulting,Muster Tech GmbH,anna.berger@muster-tech.de,+49 89 1234-100,+49 170 111 2233,www.muster-tech.de
-C-1002,Thomas Klein,Thomas,Klein,Vertriebsleiter,Vertrieb,Nordwind AG,thomas.klein@nordwind.at,+43 1 5550 100,+43 660 1234567,www.nordwind.at
-C-1003,Marco Rossi,Marco,Rossi,Account Manager,Sales,Helvetia Solutions AG,marco.rossi@helvetia-solutions.ch,+41 44 200 30 40,,www.helvetia-solutions.ch
-C-1004,Sandra Bauer,Sandra,Bauer,Senior Developer,Entwicklung,TechnoVision GmbH,sandra.bauer@technovision.de,+49 30 7788 100,+49 151 2233445,www.technovision.de
+crm_id,full_name,first_name,last_name,job_title,department,company,email,phone,mobile,website,address,linkedin
+C-1001,Anna Berger,Anna,Berger,Senior Consultant,Consulting,Muster Tech GmbH,anna.berger@muster-tech.de,+49 89 1234-100,+49 170 111 2233,www.muster-tech.de,"Altstadtring 2, 80331 Muenchen",
+C-1002,Thomas Klein,Thomas,Klein,Vertriebsleiter,Vertrieb,Nordwind AG,thomas.klein@nordwind.at,+43 1 5550 100,+43 660 1234567,www.nordwind.at,"Hafenstrasse 10, 1020 Wien",
+C-1003,Marco Rossi,Marco,Rossi,Account Manager,Sales,Helvetia Solutions AG,marco.rossi@helvetia-solutions.ch,+41 44 200 30 40,,www.helvetia-solutions.ch,"Bahnhofstrasse 3, 8001 Zuerich",
+C-1004,Sandra Bauer,Sandra,Bauer,Senior Developer,Entwicklung,TechnoVision GmbH,sandra.bauer@technovision.de,+49 30 7788 100,+49 151 2233445,www.technovision.de,,

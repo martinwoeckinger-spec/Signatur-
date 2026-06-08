@@ -1,4 +1,10 @@
-"""Findet den Signaturblock einer E-Mail und extrahiert geschäftsrelevanten Kontext."""
+"""Findet Signaturblöcke einer E-Mail und extrahiert geschäftsrelevanten Kontext.
+
+Robust gegen reale Mails: erkennt mehrere Signaturen pro E-Mail (z. B. in
+weitergeleiteten Verläufen) und leitet Firma notfalls aus der E-Mail-Domain ab.
+Relevante Felder: Name, Position, Firma, Adresse, Website, LinkedIn, E-Mail –
+die E-Mail-Adresse ist der primäre Schlüssel für den CRM-Abgleich.
+"""
 from __future__ import annotations
 
 import re
@@ -12,21 +18,22 @@ EMAIL_RE = re.compile(r"[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}")
 URL_RE = re.compile(
     r"\b((?:https?://)?(?:www\.)?[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+(?:/[^\s|<>]*)?)",
 )
-# Telefonnummern: +, Klammern, Leer-/Bindestriche, Slash; mind. 6 Ziffern
 PHONE_RE = re.compile(r"(?<![\w@])(\+?\(?\d[\d\s().\-/]{5,}\d)")
-LINKEDIN_RE = re.compile(r"(https?://)?([a-z]{2,3}\.)?linkedin\.com/[^\s|<>]+", re.I)
+LINKEDIN_RE = re.compile(
+    r"(?:https?://)?(?:[a-z]{2,3}\.)?linkedin\.com/(?:in|company|pub)/[^\s|<>,)]+", re.I
+)
+# E-Mail-Adressen, die nicht zu Personen gehoeren (Inline-Bilder etc.)
+_EMAIL_NOISE = re.compile(r"^(image\d|cid|mm|emns|noreply|no-reply|mailer)", re.I)
 
-# Deutsche + englische Grußformeln, die typischerweise dem Signaturblock vorangehen
 GREETINGS = [
     "mit freundlichen grüßen", "mit freundlichen gruessen", "freundliche grüße",
     "freundliche gruesse", "viele grüße", "viele gruesse", "beste grüße",
-    "beste gruesse", "herzliche grüße", "liebe grüße", "mfg", "lg",
-    "best regards", "kind regards", "warm regards", "best wishes",
+    "beste gruesse", "herzliche grüße", "liebe grüße", "mit besten grüßen",
+    "mfg", "lg", "best regards", "kind regards", "warm regards", "best wishes",
     "regards", "cheers", "sincerely", "yours sincerely", "thanks and regards",
-    "thank you", "vielen dank", "danke",
+    "thank you", "vielen dank", "danke", "with kind regards",
 ]
 
-# Telefon-Labels → Feldzuordnung
 PHONE_LABELS = {
     "phone": ["tel", "tel.", "phone", "fon", "fixed", "festnetz", "office", "büro",
               "buero", "t:", "p:", "ph:", "direct", "durchwahl"],
@@ -34,50 +41,197 @@ PHONE_LABELS = {
     "fax": ["fax", "f:", "telefax"],
 }
 
-# Firmenrechtsformen / -kennungen
+# Firmenrechtsformen / starke Firmenkennungen
 COMPANY_HINTS = [
-    "gmbh", "ag", "kg", "ohg", "se", "e.u.", "e.k.", "gbr", "ug", "mbh",
-    "inc", "inc.", "llc", "ltd", "ltd.", "plc", "corp", "corporation",
-    "co.", "group", "gruppe", "holding", "partners", "& co",
+    "gmbh", "ag", "kg", "kgaa", "ohg", "se", "e.u.", "e.k.", "gbr", "ug", "mbh",
+    "e.v.", "ev", "inc", "inc.", "llc", "ltd", "ltd.", "plc", "corp", "corporation",
+    "co.", "& co", "group", "gruppe", "holding", "partners", "sarl", "s.a.",
+    "b.v.", "bv", "n.v.", "srl", "oy", "limited", "technologies", "solutions",
+    "systems",
 ]
 
-# Titel-/Rollen-Schlüsselwörter mit Seniorität
 TITLE_KEYWORDS = {
     "C-Level": [
         "ceo", "cfo", "cto", "coo", "cio", "cmo", "cdo", "geschäftsführer",
-        "geschaeftsfuehrer", "geschäftsführerin", "vorstand", "managing director",
-        "owner", "inhaber", "gesellschafter", "president", "partner",
+        "geschaeftsfuehrer", "geschäftsführerin", "geschäftsführende", "vorstand",
+        "vorständin", "managing director", "owner", "inhaber", "inhaberin",
+        "gesellschafter", "president", "präsident", "partner", "partnerin",
+        "founder", "co-founder", "gründer", "mitgründer", "geschäftsleitung",
     ],
     "Leitung": [
-        "head of", "leiter", "leiterin", "leitung", "director", "direktor",
-        "vp ", "vice president", "vorstandsvorsitz", "abteilungsleiter",
-        "teamleiter", "bereichsleiter", "prokurist",
+        "head of", "head", "leiter", "leiterin", "leitung", "director", "direktor",
+        "direktorin", "vp ", "vice president", "vorstandsvorsitz", "abteilungsleiter",
+        "abteilungsleiterin", "teamleiter", "teamleiterin", "bereichsleiter",
+        "bereichsleiterin", "prokurist", "prokuristin", "standortleiter",
+        "niederlassungsleiter",
     ],
     "Management": [
         "manager", "managerin", "lead", "principal", "senior manager",
-        "projektleiter", "key account",
+        "projektleiter", "projektleiterin", "key account", "account manager",
+        "account executive", "product owner", "produktmanager", "teamlead",
+        "team lead", "scrum master",
     ],
     "Fachkraft": [
-        "engineer", "developer", "entwickler", "consultant", "berater",
-        "specialist", "spezialist", "analyst", "referent", "sachbearbeiter",
-        "architect", "designer", "scientist", "expert", "associate",
+        "engineer", "developer", "entwickler", "entwicklerin", "consultant",
+        "berater", "beraterin", "specialist", "spezialist", "analyst", "referent",
+        "referentin", "sachbearbeiter", "sachbearbeiterin", "architect", "designer",
+        "scientist", "expert", "associate", "ingenieur", "ingenieurin", "techniker",
+        "recruiter", "recruiting", "controller", "buchhalter", "buchhalterin",
+        "assistenz", "assistent", "assistentin", "assistant", "kundenberater",
+        "kundenbetreuer", "sales", "vertrieb", "marketing",
     ],
 }
 
 DECISION_MAKER_LEVELS = {"C-Level", "Leitung"}
 
-# Wörter, die KEINE Personennamen sind (für die Namensheuristik)
 _NON_NAME_TOKENS = re.compile(
     r"@|http|www|tel|mobil|fax|gmbh|\bag\b|\d|straße|strasse|str\.|platz|"
-    r"www\.|e-mail|mail:|phone|grüße|gruesse|regards",
+    r"e-mail|mail:|phone|grüße|gruesse|gruß|regards|linkedin",
     re.I,
 )
+_GRADE_RE = re.compile(r"\b(dr|prof|dipl|mag|ing|mba|msc|bsc|ba|ma)\.?\b", re.I)
+
+# Adresse: Strasse + Hausnummer, PLZ + Ort, Land
+# Deutsche Strassen-Suffixe sind Komposita (kein fuehrendes \b, z. B.
+# "Elbchaussee"); englische Strassen-Woerter brauchen beidseitige Wortgrenzen,
+# damit z. B. "ave" nicht in "Brightwave" matcht.
+_STREET_RE = re.compile(
+    r"(?:stra(?:ß|ss)e|str\.|gasse|weg|platz|allee|ring|chaussee|damm|ufer)\b"
+    r"|\b(?:road|rd\.|street|st\.|ave|avenue|lane|boulevard|blvd)\b", re.I,
+)
+_HOUSENO_RE = re.compile(r"\b[A-Za-zÄÖÜäöü.\- ]{3,}\s+\d{1,4}[a-z]?\b")
+_PLZ_RE = re.compile(r"\b([A-Z]{1,2}-)?(\d{4,5})\s+([A-ZÄÖÜ][\wäöüß.\-]+)")
+_COUNTRY_RE = re.compile(
+    r"^\s*(deutschland|germany|österreich|oesterreich|austria|schweiz|"
+    r"switzerland|liechtenstein)\s*$", re.I,
+)
+_WEB_LABEL_RE = re.compile(r"\b(web|website|homepage|url|internet)\b\s*[:\-]?", re.I)
 
 
-# --- Signaturblock finden ----------------------------------------------------
+# --- Hilfen ------------------------------------------------------------------
+
+def _has_company_hint(text: str) -> bool:
+    low = text.lower()
+    return any(re.search(rf"(?<![a-z]){re.escape(h)}(?![a-z])", low)
+               for h in COMPANY_HINTS)
+
+
+def _is_greeting(line: str) -> bool:
+    low = line.strip().lower().rstrip(",.!").strip()
+    return low in GREETINGS or any(low.startswith(g) for g in GREETINGS)
+
+
+def _classify_phone_line(line: str) -> Optional[str]:
+    low = line.lower()
+    for field, labels in PHONE_LABELS.items():
+        if any(lab in low for lab in labels):
+            return field
+    return None
+
+
+def _detect_seniority(job_title: str) -> str:
+    low = job_title.lower()
+    for level, keywords in TITLE_KEYWORDS.items():
+        if any(kw in low for kw in keywords):
+            return level
+    return ""
+
+
+def _looks_like_name(line: str) -> bool:
+    s = line.strip().strip("|").strip()
+    if not s or _NON_NAME_TOKENS.search(s):
+        return False
+    s = _GRADE_RE.sub("", s)
+    words = [w for w in re.split(r"[\s,]+", s.strip()) if w]
+    if not (1 < len(words) <= 4):
+        return False
+    capish = sum(1 for w in words if w[:1].isupper())
+    return capish >= max(2, len(words) - 1)
+
+
+def _split_name(full: str) -> tuple[str, str]:
+    cleaned = _GRADE_RE.sub("", full).strip()
+    parts = [p.strip(",") for p in re.split(r"\s+", cleaned)
+             if p and any(ch.isalpha() for ch in p)]
+    if len(parts) >= 2:
+        return parts[0], " ".join(parts[1:])
+    return (parts[0] if parts else cleaned), ""
+
+
+def _brand_tokens(value: str) -> list[str]:
+    """Markenbestandteile aus einer Domain/URL/E-Mail (z. B. 'muster-tech')."""
+    if not value:
+        return []
+    host = value.lower().split("@")[-1]
+    host = re.sub(r"^https?://", "", host).split("/")[0]
+    host = re.sub(r"^www\.", "", host)
+    labels = host.split(".")
+    core = labels[-2] if len(labels) >= 2 else labels[0]
+    return [t for t in re.split(r"[-_]", core) if len(t) >= 3]
+
+
+def _choose_email(block: str, fallback: LoadedEmail | None) -> str:
+    found = [e for e in EMAIL_RE.findall(block)
+             if not _EMAIL_NOISE.match(e.split("@")[0])]
+    lowered = [e.lower() for e in found]
+    if fallback and fallback.from_email and fallback.from_email in lowered:
+        return fallback.from_email
+    if lowered:
+        return lowered[0]
+    if fallback and fallback.from_email:
+        return fallback.from_email
+    return ""
+
+
+def _find_company(lines: list[str], used: set[int]) -> tuple[str, int]:
+    for i, ln in enumerate(lines):
+        if i in used:
+            continue
+        if _has_company_hint(ln):
+            for chunk in re.split(r"\s*[|·•]\s*", ln):
+                if _has_company_hint(chunk):
+                    return chunk.strip(" ,;|"), i
+            return ln.strip(" ,;|"), i
+    return "", -1
+
+
+def _find_company_by_domain(lines: list[str], used: set[int],
+                            domain_source: str) -> tuple[str, int]:
+    toks = _brand_tokens(domain_source)
+    if not toks:
+        return "", -1
+    for i, ln in enumerate(lines):
+        if i in used:
+            continue
+        low = re.sub(r"[^a-z0-9]", "", ln.lower())
+        if "linkedin" in ln.lower() or EMAIL_RE.search(ln) or _STREET_RE.search(ln):
+            continue
+        if any(t in low for t in toks):
+            return ln.strip(" ,;|"), i
+    return "", -1
+
+
+def _find_address(lines: list[str], used: set[int]) -> tuple[str, str]:
+    """Mehrzeilige Adresse (Strasse, PLZ/Ort, Land) + grober Standort."""
+    parts: list[str] = []
+    location = ""
+    for i, ln in enumerate(lines):
+        if i in used:
+            continue
+        is_street = bool(_STREET_RE.search(ln))
+        plz = _PLZ_RE.search(ln)
+        is_country = bool(_COUNTRY_RE.match(ln))
+        if is_street or plz or is_country:
+            parts.append(ln.strip(" ,;|"))
+            used.add(i)
+            if plz:
+                location = plz.group(3).strip(" .,-")
+    return ", ".join(parts), location
+
+
+# --- Signaturblock finden (Legacy/Einzel) ------------------------------------
 
 def _strip_quoted(lines: list[str]) -> list[str]:
-    """Entfernt zitierten Verlauf (>, 'Von:', 'On ... wrote:', '-----')."""
     out: list[str] = []
     for ln in lines:
         low = ln.strip().lower()
@@ -94,31 +248,22 @@ def _strip_quoted(lines: list[str]) -> list[str]:
 
 
 def extract_signature_block(body: str) -> str:
-    """Isoliert den mutmaßlichen Signaturblock aus dem Mailtext."""
     if not body:
         return ""
     lines = _strip_quoted(body.splitlines())
-
-    # 1) RFC-3676-Trenner "-- "
     for i, ln in enumerate(lines):
         if ln.strip() in ("--", "-- "):
             block = "\n".join(lines[i + 1:]).strip()
             if block:
                 return block
-
-    # 2) Letzte Grußformel als Ankerpunkt
     anchor = None
     for i, ln in enumerate(lines):
-        low = ln.strip().lower().rstrip(",.!").strip()
-        if low in GREETINGS or any(low.startswith(g) for g in GREETINGS):
+        if _is_greeting(ln):
             anchor = i
     if anchor is not None:
         block = "\n".join(lines[anchor + 1:]).strip()
         if block:
             return block
-
-    # 3) Fallback: letzte bis zu 8 nicht-leeren Zeilen, wenn sie nach
-    #    Kontaktinfo aussehen (E-Mail/Telefon/Firmenkennung vorhanden)
     nonempty = [ln for ln in lines if ln.strip()]
     tail = "\n".join(nonempty[-8:])
     if EMAIL_RE.search(tail) or PHONE_RE.search(tail) or _has_company_hint(tail):
@@ -126,87 +271,7 @@ def extract_signature_block(body: str) -> str:
     return ""
 
 
-def _has_company_hint(text: str) -> bool:
-    low = text.lower()
-    return any(re.search(rf"\b{re.escape(h)}\b", low) for h in COMPANY_HINTS)
-
-
 # --- Feld-Extraktion ---------------------------------------------------------
-
-def _classify_phone_line(line: str) -> Optional[str]:
-    low = line.lower()
-    for field, labels in PHONE_LABELS.items():
-        for lab in labels:
-            if lab in low:
-                return field
-    return None
-
-
-def _detect_seniority(job_title: str) -> str:
-    low = job_title.lower()
-    for level, keywords in TITLE_KEYWORDS.items():
-        if any(kw in low for kw in keywords):
-            return level
-    return ""
-
-
-def _looks_like_name(line: str) -> bool:
-    s = line.strip().strip("|").strip()
-    if not s or _NON_NAME_TOKENS.search(s):
-        return False
-    # akademische Grade entfernen
-    s = re.sub(r"\b(dr|prof|dipl|mag|ing|mba|msc|bsc|ba|ma)\.?\b", "", s, flags=re.I)
-    words = [w for w in re.split(r"[\s,]+", s.strip()) if w]
-    if not (1 < len(words) <= 4):
-        return False
-    # Mehrheit der Wörter beginnt groß
-    capish = sum(1 for w in words if w[:1].isupper())
-    return capish >= max(2, len(words) - 1)
-
-
-def _split_name(full: str) -> tuple[str, str]:
-    cleaned = re.sub(r"\b(dr|prof|dipl|mag|ing|mba|msc|bsc|ba|ma)\.?\b", "",
-                     full, flags=re.I).strip()
-    # Tokens ohne Buchstaben (z. B. uebrig gebliebene Satzzeichen) verwerfen
-    parts = [p for p in re.split(r"\s+", cleaned)
-             if p and any(ch.isalpha() for ch in p)]
-    if len(parts) >= 2:
-        return parts[0], " ".join(parts[1:])
-    return (parts[0] if parts else cleaned), ""
-
-
-def _find_company(lines: list[str], used: set[int]) -> tuple[str, int]:
-    for i, ln in enumerate(lines):
-        if i in used:
-            continue
-        if _has_company_hint(ln):
-            # nur den firmenartigen Teil bei "|"/"," übernehmen
-            for chunk in re.split(r"\s*[|·•]\s*", ln):
-                if _has_company_hint(chunk):
-                    return chunk.strip(" ,;|"), i
-            return ln.strip(" ,;|"), i
-    return "", -1
-
-
-def _find_address(lines: list[str], used: set[int]) -> tuple[str, str]:
-    """Findet Straße + PLZ/Ort und leitet einen groben Standort ab."""
-    street_re = re.compile(
-        r"\b(stra(ß|ss)e|str\.|gasse|weg|platz|allee|ring|road|rd\.|street|st\.|ave)\b",
-        re.I,
-    )
-    plz_re = re.compile(r"\b(\d{4,5})\s+([A-Za-zÄÖÜäöüß.\-]+)")
-    address_parts: list[str] = []
-    location = ""
-    for i, ln in enumerate(lines):
-        if i in used:
-            continue
-        if street_re.search(ln) or plz_re.search(ln):
-            address_parts.append(ln.strip(" ,;|"))
-            m = plz_re.search(ln)
-            if m:
-                location = m.group(2).strip(" .,-")
-    return ", ".join(address_parts), location
-
 
 def parse_signature(block: str, fallback: LoadedEmail | None = None) -> Signature:
     """Parst einen Signaturblock in ein `Signature`-Objekt."""
@@ -214,33 +279,33 @@ def parse_signature(block: str, fallback: LoadedEmail | None = None) -> Signatur
     lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
     used: set[int] = set()
 
-    # E-Mail
-    m = EMAIL_RE.search(block)
-    if m:
-        sig.email = m.group(0).lower()
-    elif fallback and fallback.from_email:
-        sig.email = fallback.from_email
+    # E-Mail (beste Wahl)
+    sig.email = _choose_email(block, fallback)
 
-    # LinkedIn (vor allgemeiner URL, damit es nicht als Website endet)
+    # LinkedIn (vor allgemeiner URL)
     lk = LINKEDIN_RE.search(block)
     if lk:
-        sig.linkedin = lk.group(0)
+        sig.linkedin = lk.group(0).rstrip(".,;)")
 
-    # Website (erste URL, die keine E-Mail und kein LinkedIn ist).
-    # E-Mail-Adressen vorab entfernen, damit deren lokaler Teil (z. B.
-    # "anna.berger") nicht faelschlich als Domain erkannt wird.
+    # Website: bevorzugt mit Label, sonst erste echte URL ohne E-Mail/LinkedIn
     url_search_text = EMAIL_RE.sub(" ", block)
     for um in URL_RE.finditer(url_search_text):
-        cand = um.group(1).strip().rstrip(".,;")
-        if "@" in cand or "linkedin.com" in cand.lower():
+        cand = um.group(1).strip().rstrip(".,;)")
+        low = cand.lower()
+        if "@" in cand or "linkedin.com" in low or low in ("e.u", "co"):
             continue
-        if "." in cand:
+        if "." in cand and not cand.replace(".", "").isdigit():
             sig.website = cand
             break
 
+    # Greeting-Zeilen markieren (nicht als Name/Titel verwenden)
+    for i, ln in enumerate(lines):
+        if _is_greeting(ln):
+            used.add(i)
+
     # Telefonnummern nach Label klassifizieren
     for i, ln in enumerate(lines):
-        if not PHONE_RE.search(ln):
+        if i in used or not PHONE_RE.search(ln):
             continue
         kind = _classify_phone_line(ln) or "phone"
         nums = PHONE_RE.findall(ln)
@@ -253,46 +318,56 @@ def parse_signature(block: str, fallback: LoadedEmail | None = None) -> Signatur
             sig.fax = number
         elif not sig.phone:
             sig.phone = number
-        used.add(i)
+        # Zeile nur "verbrauchen", wenn sie reine Telefonzeile ist
+        if not _looks_like_name(re.sub(PHONE_RE, "", ln)):
+            used.add(i)
 
-    # Name: erst Heuristik im Block, sonst aus dem From-Header
+    # Name: Heuristik, ggf. "Name | Position" trennen
     name_idx = -1
     for i, ln in enumerate(lines):
         if i in used:
             continue
-        if _looks_like_name(ln):
-            sig.full_name = ln.strip().strip("|").strip()
+        chunks = re.split(r"\s*[|·•–-]\s{1,}", ln)
+        head = chunks[0].strip()
+        if _looks_like_name(head):
+            sig.full_name = head.strip("|").strip()
             name_idx = i
             used.add(i)
+            if len(chunks) > 1 and _detect_seniority(chunks[1]):
+                sig.job_title = chunks[1].strip(" ,;|")
             break
     if not sig.full_name and fallback and fallback.from_name:
         sig.full_name = fallback.from_name.strip()
 
-    # Firma
+    # Firma: Rechtsform -> Domain-Marke -> Zeile nach Name
     company, c_idx = _find_company(lines, used)
+    if not company:
+        company, c_idx = _find_company_by_domain(
+            lines, used, sig.website or sig.email)
     if company:
         sig.company = company
         used.add(c_idx)
 
-    # Job-Titel: bevorzugt Zeile direkt nach dem Namen, sonst Zeile mit Titel-Keyword
-    title = ""
-    if name_idx >= 0 and name_idx + 1 < len(lines) and (name_idx + 1) not in used:
-        cand = lines[name_idx + 1]
-        if not EMAIL_RE.search(cand) and not PHONE_RE.search(cand):
-            title = cand.strip(" ,;|")
-            used.add(name_idx + 1)
-    if not title:
-        for i, ln in enumerate(lines):
-            if i in used:
-                continue
-            if _detect_seniority(ln):
-                # ggf. "Titel | Abteilung" trennen
-                title = re.split(r"\s*[|·•]\s*", ln)[0].strip(" ,;|")
-                used.add(i)
-                break
-    sig.job_title = title
+    # Position: bereits aus "Name | Position"? sonst Zeile nach Name / Keyword
+    if not sig.job_title:
+        title = ""
+        if name_idx >= 0 and name_idx + 1 < len(lines) and (name_idx + 1) not in used:
+            cand = lines[name_idx + 1]
+            if (not EMAIL_RE.search(cand) and not PHONE_RE.search(cand)
+                    and not _STREET_RE.search(cand) and cand != sig.company):
+                title = re.split(r"\s*[|·•]\s*", cand)[0].strip(" ,;|")
+                used.add(name_idx + 1)
+        if not title:
+            for i, ln in enumerate(lines):
+                if i in used:
+                    continue
+                if _detect_seniority(ln):
+                    title = re.split(r"\s*[|·•]\s*", ln)[0].strip(" ,;|")
+                    used.add(i)
+                    break
+        sig.job_title = title
 
-    # Abteilung (Zeile mit "Abteilung"/"Department"/"Team" oder Teil nach "|")
+    # Abteilung
     for i, ln in enumerate(lines):
         if i in used:
             continue
@@ -302,27 +377,138 @@ def parse_signature(block: str, fallback: LoadedEmail | None = None) -> Signatur
             break
 
     # Adresse + Standort
-    address, location = _find_address(lines, used)
-    sig.address = address
-    sig.location = location
+    sig.address, sig.location = _find_address(lines, used)
 
     # Name aufteilen + abgeleiteter Kontext
     if sig.full_name:
         sig.first_name, sig.last_name = _split_name(sig.full_name)
     sig.seniority = _detect_seniority(sig.job_title)
     sig.is_decision_maker = sig.seniority in DECISION_MAKER_LEVELS
-
     return sig
 
 
+# --- Mehrere Signaturen pro E-Mail -------------------------------------------
+
+_BOUNDARY_RE = re.compile(
+    r"^\s*(-{2,}\s*(original|ursprüngliche|forwarded|weitergeleitete)|"
+    r"(von|from|gesendet|sent|an|to|cc|betreff|subject|datum|date)\s*:|"
+    r"(am|on)\b.*\b(schrieb|wrote)\b|"
+    r"(gesendet|sent)\s+(von|from)\s+mein|_{5,})", re.I,
+)
+
+
+def _segments(text: str) -> list[list[str]]:
+    """Teilt die Mail an Verlaufsgrenzen (Von:/From:/-----/„… schrieb:") in
+    Segmente – je Segment i. d. R. eine Nachricht mit (höchstens) einer Signatur."""
+    segments: list[list[str]] = []
+    cur: list[str] = []
+    for ln in text.splitlines():
+        stripped = re.sub(r"^[ \t]*>+[ \t]?", "", ln)
+        if _BOUNDARY_RE.match(stripped):
+            if cur:
+                segments.append(cur)
+            cur = []
+            continue
+        cur.append(stripped.rstrip())
+    if cur:
+        segments.append(cur)
+    return segments
+
+
+def _segment_block(lines: list[str]) -> str:
+    """Signaturblock innerhalb eines Segments: '-- ' → letzte Grußformel → Tail."""
+    for i, ln in enumerate(lines):
+        if ln.strip() in ("--", "-- "):
+            return "\n".join(lines[i + 1:]).strip()
+    anchor = None
+    for i, ln in enumerate(lines):
+        if _is_greeting(ln):
+            anchor = i
+    if anchor is not None:
+        return "\n".join(lines[anchor + 1:]).strip()
+    nonempty = [ln for ln in lines if ln.strip()]
+    tail = "\n".join(nonempty[-10:])
+    if (EMAIL_RE.search(tail) or PHONE_RE.search(tail)
+            or _has_company_hint(tail) or LINKEDIN_RE.search(tail)):
+        return tail.strip()
+    return ""
+
+
+def _sig_min(sig: Signature) -> bool:
+    return bool(sig.email
+                or (sig.full_name and (sig.company or sig.job_title))
+                or sig.linkedin)
+
+
+def _merge_into(base: Signature, extra: Signature) -> None:
+    for f in ("full_name", "first_name", "last_name", "job_title", "department",
+              "company", "phone", "mobile", "fax", "website", "linkedin",
+              "address", "location", "seniority"):
+        if not getattr(base, f) and getattr(extra, f):
+            setattr(base, f, getattr(extra, f))
+    base.is_decision_maker = base.is_decision_maker or extra.is_decision_maker
+
+
+def _norm(v: str) -> str:
+    return " ".join((v or "").lower().split())
+
+
+def extract_all_signatures(mail: LoadedEmail) -> list[Signature]:
+    """Findet **alle** Signaturen einer E-Mail (auch in Verläufen)."""
+    text = mail.text_body or ""
+    if not text and mail.html_body:
+        from .email_loader import html_to_text
+        text = html_to_text(mail.html_body)
+
+    sigs: list[Signature] = []
+    for segment in _segments(text):
+        block = _segment_block(segment)
+        if not block:
+            continue
+        s = parse_signature(block)
+        if _sig_min(s):
+            sigs.append(s)
+
+    # Deduplizieren (Schlüssel: E-Mail, sonst Name+Firma), Felder zusammenführen
+    by_key: dict[str, Signature] = {}
+    order: list[str] = []
+    for s in sigs:
+        key = s.email or ("nc:" + _norm(s.full_name) + "|" + _norm(s.company))
+        if key in by_key:
+            _merge_into(by_key[key], s)
+        else:
+            by_key[key] = s
+            order.append(key)
+    result = [by_key[k] for k in order]
+
+    # Absenderadresse verankern (primärer CRM-Schlüssel)
+    if mail.from_email and not any(s.email == mail.from_email for s in result):
+        fn = _norm(mail.from_name)
+        anchored = False
+        for s in result:
+            if not s.email and fn and _norm(s.full_name) == fn:
+                s.email = mail.from_email
+                anchored = True
+                break
+        if not anchored and not result:
+            s = extract_from_email(mail)
+            if _sig_min(s):
+                result = [s]
+
+    if not result:
+        s = extract_from_email(mail)
+        if _sig_min(s):
+            result = [s]
+    return result
+
+
 def extract_from_email(mail: LoadedEmail) -> Signature:
-    """Komfortfunktion: Block finden + parsen für eine geladene E-Mail."""
+    """Einzel-Signatur (Legacy/Komfort): Block finden + parsen."""
     body = mail.text_body or ""
     block = extract_signature_block(body)
     if not block and mail.html_body:
         from .email_loader import html_to_text
         block = extract_signature_block(html_to_text(mail.html_body))
     if not block:
-        # Notnagel: gesamten (bereinigten) Text als Block verwenden
         block = "\n".join(_strip_quoted(body.splitlines())).strip()
     return parse_signature(block, fallback=mail)

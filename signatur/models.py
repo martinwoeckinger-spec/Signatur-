@@ -68,6 +68,8 @@ class CrmContact:
     phone: str = ""
     mobile: str = ""
     website: str = ""
+    address: str = ""
+    linkedin: str = ""
     source: str = ""  # z. B. "mock", "sap-sales-cloud"
 
 
