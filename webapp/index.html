@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signatur-Sync · E-Mail-Signaturen ↔ CRM</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top-app-bar">
+  <div class="bar-inner">
+    <div class="bar-title"><span class="bar-logo">📇</span>
+      <span>Signatur-Sync <span class="bar-sub">E-Mail-Signaturen ↔ CRM</span></span></div>
+    <div class="bar-actions">
+      <button id="btnDemo" class="btn btn-text">Demodaten</button>
+      <label class="btn btn-tonal" for="fileInput">＋ E-Mails einfügen</label>
+      <input id="fileInput" type="file" accept=".eml,.msg" multiple hidden>
+    </div>
+  </div>
+</header>
+
+<main class="container grid">
+  <aside class="rail">
+    <section class="card card-filled">
+      <h2 class="title-s">E-Mails einfügen</h2>
+      <div id="dropzone" class="dropzone">
+        <div class="dz-icon">📥</div>
+        <div class="dz-text">.eml / .msg hierher ziehen</div>
+        <div class="dz-sub">oder <span class="link" id="pick">Dateien wählen</span></div>
+      </div>
+      <div id="fileMeta" class="meta"></div>
+      <div class="row-actions">
+        <button id="btnDemo2" class="btn btn-outlined btn-sm">Demodaten laden</button>
+        <button id="btnClear" class="btn btn-text btn-sm">Leeren</button>
+      </div>
+    </section>
+    <section class="card card-filled">
+      <h2 class="title-s">CRM (Demo)</h2>
+      <p class="body-s muted" id="crmInfo"></p>
+    </section>
+    <section class="card card-filled">
+      <h2 class="title-s">Legende</h2>
+      <ul class="legend">
+        <li><span class="swatch sw-new"></span> Neu im CRM anlegen (Lead)</li>
+        <li><span class="swatch sw-upd"></span> Im CRM aktualisieren</li>
+        <li><span class="swatch sw-ok"></span> Aktuell – keine Aktion</li>
+        <li><span class="swatch sw-dm"></span> Entscheider:in (Feature-Signal)</li>
+      </ul>
+    </section>
+  </aside>
+
+  <section class="content">
+    <div id="banner" class="banner" hidden></div>
+    <div id="kpis" class="kpis" hidden></div>
+    <div class="segmented" id="tabs" hidden>
+      <button class="seg active" data-tab="reco">Empfehlungen <span class="seg-count" id="cReco">0</span></button>
+      <button class="seg" data-tab="all">Alle Kontakte <span class="seg-count" id="cAll">0</span></button>
+      <button class="seg" data-tab="mail">Hinweis-Mail</button>
+    </div>
+    <div id="paneReco" class="pane"></div>
+    <div id="paneAll" class="pane" hidden></div>
+    <div id="paneMail" class="pane" hidden></div>
+    <div id="empty" class="empty">
+      <div class="big">📭</div>
+      <h3>E-Mails einfügen</h3>
+      <p>Ziehe <code>.eml</code>- oder <code>.msg</code>-Dateien in das Feld links
+         oder lade die Demodaten. Signatur-Analyse und CRM-Abgleich laufen komplett
+         in deinem Browser – nichts wird hochgeladen.</p>
+      <div class="steps">
+        <span class="step"><span class="num">1</span> Mails einfügen</span>
+        <span class="step"><span class="num">2</span> Automatischer Abgleich</span>
+        <span class="step"><span class="num">3</span> Empfehlungen prüfen</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="snackbar" class="snackbar"></div>
+
+<script src="app.js"></script>
+<script src="data.js"></script>
+<script>
+(function(){
+  "use strict";
+  var C = window.SignaturCore;
+  var CRM = window.CRM_DATA || [];
+  var results = [], skipped = [];
+
+  var $ = function(id){ return document.getElementById(id); };
+  var FIELD_LABEL = {job_title:"Position/Titel",department:"Abteilung",company:"Firma",
+    phone:"Telefon",mobile:"Mobil",website:"Website"};
+
+  function esc(v){ return C.escapeHtml(v||""); }
+  function snack(msg){ var s=$("snackbar"); s.textContent=msg; s.classList.add("show");
+    setTimeout(function(){ s.classList.remove("show"); },3200); }
+
+  function initials(sig){
+    var p=[sig.first_name,sig.last_name].filter(Boolean);
+    var parts=p.length?p:(sig.full_name?sig.full_name.split(/\s+/):[]);
+    if(parts.length){return ((parts[0][0]||"")+(parts.length>1?parts[parts.length-1][0]:"")).toUpperCase();}
+    return sig.email?sig.email.slice(0,2).toUpperCase():"–";
+  }
+  function actionableDiffs(res){
+    return res.discrepancies.filter(function(d){
+      return d.change_type==="FIELD_CHANGED"||d.change_type==="FIELD_NEW_IN_CRM"; });
+  }
+
+  function kvBlock(sig){
+    var role=sig.job_title+(sig.seniority?(" · "+sig.seniority):"");
+    var rows=[["Name",sig.full_name],["Position",role],["Firma",sig.company],
+      ["Abteilung",sig.department],["E-Mail",sig.email],["Telefon",sig.phone],
+      ["Mobil",sig.mobile],["Website",sig.website],["LinkedIn",sig.linkedin],
+      ["Standort",sig.location]];
+    var out="<div class='block-h'>Aus Signatur extrahiert</div><dl class='kv'>";
+    rows.forEach(function(r){ if(r[1]) out+="<dt>"+esc(r[0])+"</dt><dd>"+esc(r[1])+"</dd>"; });
+    return out+"</dl>";
+  }
+  function recoBlock(res){
+    var t=res.tone;
+    var signals=res.business_signals.map(function(s){return "<div class='chip'>"+esc(s)+"</div>";}).join("");
+    var chips=signals?("<div class='chips'>"+signals+"</div>"):"";
+    if(t==="ok"){
+      return "<div class='reco'><div class='ok-note'>✓ Signatur stimmt mit dem CRM überein – keine Aktion nötig.</div>"+chips+"</div>";
+    }
+    var rows=actionableDiffs(res).map(function(d){
+      var label=FIELD_LABEL[d.field]||d.field;
+      var cell = d.crm_value
+        ? "<span class='old'>"+esc(d.crm_value)+"</span><span class='arrow'>→</span><span class='newv'>"+esc(d.signature_value)+"</span>"
+        : "<span class='muted'>leer</span><span class='arrow'>→</span><span class='newv'>"+esc(d.signature_value)+"</span>";
+      return "<tr><td>"+esc(label)+"</td><td>"+cell+"</td></tr>";
+    }).join("");
+    var table=rows?("<table class='diff'><tr><th>Feld</th><th>CRM → Signatur</th></tr>"+rows+"</table>"):"";
+    var lead=(t==="new")?"🆕 Empfehlung: als neuen Kontakt/Lead anlegen":"✏️ Empfehlung: Stammdaten im CRM aktualisieren";
+    return "<div class='reco'><div class='lead'>"+lead+"</div>"+table+chips+"</div>";
+  }
+  function contactCard(res){
+    var sig=res.signature, t=res.tone;
+    var name=sig.full_name||sig.email||res.source;
+    var subBits=[sig.job_title,sig.company].filter(Boolean);
+    var sub=(subBits.join(" · ")||res.source)+" · "+res.source;
+    var pill={new:"Neuer Kontakt",upd:"Aktualisierung",ok:"Aktuell"}[t];
+    var dm=sig.is_decision_maker?"<span class='dm-chip'>Entscheider:in</span>":"";
+    return "<div class='contact t-"+t+"'><div class='c-top'>"+
+      "<div class='avatar av-"+t+"'>"+esc(initials(sig))+"</div>"+
+      "<div class='c-id'><div class='nm'>"+esc(name)+" "+dm+"</div>"+
+      "<div class='sb'>"+esc(sub)+"</div></div>"+
+      "<span class='pill pl-"+t+"'>"+pill+"</span></div>"+
+      "<div class='c-body'><div>"+kvBlock(sig)+"</div><div>"+recoBlock(res)+"</div></div></div>";
+  }
+  function group(title,items,tone){
+    if(!items.length) return "";
+    var cards=items.map(contactCard).join("");
+    return "<div class='group-head'><span class='gdot gd-"+tone+"'></span>"+
+      "<h4>"+title+"</h4><span class='gcount'>"+items.length+"</span></div>"+cards;
+  }
+  function skipBlock(){
+    if(!skipped.length) return "";
+    return "<div class='skip'>Übersprungen: "+skipped.map(function(s){
+      return esc(s.source)+" ("+esc(s.reason)+")"; }).join(", ")+"</div>";
+  }
+
+  function buildMailHtml(grp){
+    var actionable=grp.newL.concat(grp.updL);
+    var head="<div style='font-family:Arial,Helvetica,sans-serif;color:#1a1a1a'>"+
+      "<h2 style='margin:0 0 4px'>Signatur-/CRM-Abgleich – Hinweis</h2>"+
+      "<p style='color:#666;margin:0 0 12px'>Verarbeitet: <b>"+results.length+"</b> · "+
+      "Neu: <b>"+grp.newL.length+"</b> · Aktualisieren: <b>"+grp.updL.length+"</b> · "+
+      "Aktuell: <b>"+grp.okL.length+"</b></p>";
+    if(!actionable.length) return head+"<p>✅ Keine Abweichungen – CRM ist aktuell.</p></div>";
+    var body=actionable.map(function(res){
+      var sig=res.signature;
+      var diffs=actionableDiffs(res).map(function(d){
+        var label=FIELD_LABEL[d.field]||d.field;
+        return "<tr><td style='padding:4px 8px;border-top:1px solid #eee'>"+esc(label)+
+          "</td><td style='padding:4px 8px;border-top:1px solid #eee;color:#999'>"+(esc(d.crm_value)||"—")+
+          "</td><td style='padding:4px 8px;border-top:1px solid #eee;font-weight:600'>"+esc(d.signature_value)+"</td></tr>";
+      }).join("");
+      var badge=res.tone==="new"?"#F06900":"#2C82BE";
+      var tag=res.tone==="new"?"Neuer Kontakt":"Aktualisierung";
+      var sgl=res.business_signals.map(function(s){return "<li>"+esc(s)+"</li>";}).join("");
+      return "<div style='border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:0 0 12px'>"+
+        "<div style='font-weight:bold'>"+esc(sig.full_name||sig.email)+
+        " <span style='background:"+badge+";color:#fff;font-size:11px;padding:2px 8px;border-radius:10px'>"+tag+"</span></div>"+
+        "<div style='color:#666;font-size:12px;margin:2px 0 8px'>"+esc(res.source)+"</div>"+
+        (diffs?"<table style='border-collapse:collapse;width:100%;font-size:13px'><tr><th style='text-align:left;padding:4px 8px'>Feld</th><th style='text-align:left;padding:4px 8px'>CRM</th><th style='text-align:left;padding:4px 8px'>Signatur</th></tr>"+diffs+"</table>":"")+
+        (sgl?"<ul style='margin:8px 0 0;padding-left:18px'>"+sgl+"</ul>":"")+"</div>";
+    }).join("");
+    return head+body+"</div>";
+  }
+
+  function setTab(name){
+    ["reco","all","mail"].forEach(function(n){
+      var pane=$("pane"+n.charAt(0).toUpperCase()+n.slice(1));
+      if(pane) pane.hidden = n!==name;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".seg"),function(b){
+      b.classList.toggle("active", b.getAttribute("data-tab")===name);
+    });
+  }
+
+  function render(){
+    $("crmInfo").textContent = CRM.length+" Kontakte (eingebettete Demo-CSV). "+
+      "Im Echtbetrieb: SAP Sales Cloud.";
+    var has=results.length>0;
+    ["banner","kpis","tabs"].forEach(function(id){ $(id).hidden=!has; });
+    $("empty").hidden=has;
+    ["paneReco","paneAll","paneMail"].forEach(function(id){ $(id).innerHTML=""; });
+    if(!has){ if(skipped.length) $("paneReco").innerHTML=skipBlock(); return; }
+
+    var grp={
+      newL: results.filter(function(r){return r.tone==="new";}),
+      updL: results.filter(function(r){return r.tone==="upd";}),
+      okL:  results.filter(function(r){return r.tone==="ok";})
+    };
+    var todo=grp.newL.length+grp.updL.length;
+
+    // Banner
+    var b=$("banner");
+    if(todo===0){ b.className="banner calm";
+      b.innerHTML="<span class='b-ic'>✅</span><div><h3>Alles aktuell</h3><p>Keine Abweichungen – das CRM ist auf dem neuesten Stand.</p></div>";
+    } else { b.className="banner";
+      var parts=[]; if(grp.newL.length)parts.push("<b>"+grp.newL.length+"</b> neu anlegen");
+      if(grp.updL.length)parts.push("<b>"+grp.updL.length+"</b> aktualisieren");
+      b.innerHTML="<span class='b-ic'>🎯</span><div><h3>Handlungsbedarf: "+todo+" Empfehlung(en)</h3><p>"+parts.join(" · ")+"</p></div>";
+    }
+    // KPIs
+    $("kpis").innerHTML=
+      "<div class='kpi'><div class='n'>"+results.length+"</div><div class='l'>Verarbeitet</div></div>"+
+      "<div class='kpi k-new'><div class='n'>"+grp.newL.length+"</div><div class='l'>Neu anlegen</div></div>"+
+      "<div class='kpi k-upd'><div class='n'>"+grp.updL.length+"</div><div class='l'>Aktualisieren</div></div>"+
+      "<div class='kpi k-ok'><div class='n'>"+grp.okL.length+"</div><div class='l'>Aktuell</div></div>";
+    // Tabs counts
+    $("cReco").textContent=todo; $("cAll").textContent=results.length;
+    // Panes
+    var reco=group("Neu im CRM anlegen",grp.newL,"new")+group("Im CRM aktualisieren",grp.updL,"upd");
+    $("paneReco").innerHTML=(reco||"<div class='skip'>Keine offenen Empfehlungen.</div>")+skipBlock();
+    $("paneAll").innerHTML=group("Neu im CRM anlegen",grp.newL,"new")+
+      group("Im CRM aktualisieren",grp.updL,"upd")+group("Aktuell – keine Aktion",grp.okL,"ok")+skipBlock();
+    $("paneMail").innerHTML="<div class='mail'><div class='mail-bar'><span class='mail-dots'>"+
+      "<i class='md1'></i><i class='md2'></i><i class='md3'></i></span> Vorschau · als Gmail-Entwurf bzw. per SMTP versendbar</div>"+
+      "<div class='mail-body'>"+buildMailHtml(grp)+"</div></div>";
+  }
+
+  function addLoaded(loaded){
+    try{
+      var r=C.analyze(loaded,CRM);
+      if(r.skipped) skipped.push({source:loaded.source,reason:r.reason});
+      else results.push(r);
+    }catch(e){ skipped.push({source:loaded.source,reason:String(e.message||e)}); }
+  }
+
+  function b64ToBytes(b64){
+    var bin=atob(b64); var u=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u;
+  }
+  function readFile(file){
+    return new Promise(function(resolve){
+      var fr=new FileReader();
+      var isMsg=/\.msg$/i.test(file.name);
+      fr.onload=function(){
+        try{
+          var loaded = isMsg
+            ? C.parseMsg(new Uint8Array(fr.result), file.name)
+            : C.parseEml(fr.result, file.name);
+          addLoaded(loaded);
+        }catch(e){ skipped.push({source:file.name,reason:String(e.message||e)}); }
+        resolve();
+      };
+      fr.onerror=function(){ skipped.push({source:file.name,reason:"Datei nicht lesbar."}); resolve(); };
+      if(isMsg) fr.readAsArrayBuffer(file); else fr.readAsText(file);
+    });
+  }
+  function handleFiles(list){
+    var files=Array.prototype.slice.call(list).filter(function(f){return /\.(eml|msg)$/i.test(f.name);});
+    if(!files.length){ snack("Bitte .eml- oder .msg-Dateien wählen."); return; }
+    Promise.all(files.map(readFile)).then(function(){
+      $("fileMeta").textContent=results.length+" Kontakt(e) analysiert"+(skipped.length?(", "+skipped.length+" übersprungen"):"");
+      render(); setTab("reco");
+      snack(files.length+" Datei(en) eingefügt.");
+    });
+  }
+
+  function loadDemo(){
+    results=[]; skipped=[];
+    (window.DEMO_EMAILS||[]).forEach(function(d){ addLoaded(C.parseEml(d.content,d.name)); });
+    if(window.DEMO_MSG){ try{ addLoaded(C.parseMsg(b64ToBytes(window.DEMO_MSG.b64),window.DEMO_MSG.name)); }catch(e){} }
+    $("fileMeta").textContent=results.length+" Demo-Kontakt(e) geladen";
+    render(); setTab("reco");
+  }
+  function clearAll(){ results=[]; skipped=[]; $("fileMeta").textContent=""; render(); }
+
+  // Wiring
+  $("fileInput").addEventListener("change",function(e){ handleFiles(e.target.files); e.target.value=""; });
+  $("pick").addEventListener("click",function(){ $("fileInput").click(); });
+  $("btnDemo").addEventListener("click",loadDemo);
+  $("btnDemo2").addEventListener("click",loadDemo);
+  $("btnClear").addEventListener("click",clearAll);
+  Array.prototype.forEach.call(document.querySelectorAll(".seg"),function(b){
+    b.addEventListener("click",function(){ setTab(b.getAttribute("data-tab")); });
+  });
+  var dz=$("dropzone");
+  ["dragenter","dragover"].forEach(function(ev){ dz.addEventListener(ev,function(e){
+    e.preventDefault(); dz.classList.add("drag"); }); });
+  ["dragleave","drop"].forEach(function(ev){ dz.addEventListener(ev,function(e){
+    e.preventDefault(); dz.classList.remove("drag"); }); });
+  dz.addEventListener("drop",function(e){ handleFiles(e.dataTransfer.files); });
+  document.addEventListener("dragover",function(e){ e.preventDefault(); });
+  document.addEventListener("drop",function(e){ e.preventDefault(); });
+
+  loadDemo(); // Start mit Demodaten
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signatur-Sync · E-Mail-Signaturen ↔ CRM</title>
+<style>
+/* Signatur-Sync · Material Design 3 · Corporate-Palette
+   Primary #F06900 · Secondary #2C82BE · Ergaenzend #555F69 · Features #C3B9A0 */
+:root{
+  /* Farbrollen (aus Corporate-Farben abgeleitet) */
+  --primary:#F06900; --on-primary:#ffffff;
+  --primary-container:#FFDBC7; --on-primary-container:#2E1100;
+  --secondary:#2C82BE; --on-secondary:#ffffff;
+  --secondary-container:#CFE5F8; --on-secondary-container:#06283F;
+  --tertiary:#555F69; --on-tertiary:#ffffff;
+  --tertiary-container:#DCE2E9; --on-tertiary-container:#121A21;
+  --features:#C3B9A0; --features-container:#EFE9DC; --on-features:#3A3422;
+  --error:#BA1A1A; --error-container:#FFDAD6; --on-error-container:#410002;
+  --background:#F7F2EE; --on-background:#1C1B1A;
+  --surface:#FBF7F4; --surface-bright:#ffffff;
+  --surface-c-low:#F4EEEA; --surface-c:#EEE9E4; --surface-c-high:#E8E2DD; --surface-c-highest:#E2DCD7;
+  --on-surface:#1C1B1A; --on-surface-variant:#51453B; --outline:#867A6E; --outline-variant:#D6CCC1;
+  /* Form / Abstand (8dp-Raster) */
+  --r-xs:6px; --r-sm:10px; --r-md:14px; --r-lg:18px; --r-xl:28px; --r-full:999px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-8:48px;
+  --gutter:24px; --maxw:1240px;
+  /* Elevation (MD3 tonal) */
+  --e1:0 1px 2px rgba(0,0,0,.10),0 1px 3px 1px rgba(0,0,0,.06);
+  --e2:0 1px 2px rgba(0,0,0,.10),0 2px 6px 2px rgba(0,0,0,.08);
+  --e3:0 4px 8px 3px rgba(0,0,0,.08),0 1px 3px rgba(0,0,0,.12);
+  --font:"Roboto","Segoe UI",-apple-system,BlinkMacSystemFont,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{font-size:16px}
+body{margin:0;font-family:var(--font);background:var(--background);color:var(--on-background);
+  line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:500;letter-spacing:0}
+.muted{color:var(--on-surface-variant)}
+.link{color:var(--secondary);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+/* Typografie-Skala */
+.display-s{font-size:2.25rem;line-height:2.75rem;font-weight:400}
+.headline-s{font-size:1.5rem;line-height:2rem;font-weight:500}
+.title-l{font-size:1.25rem;line-height:1.75rem;font-weight:500}
+.title-m{font-size:1.0625rem;line-height:1.5rem;font-weight:500}
+.title-s{font-size:.875rem;line-height:1.25rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--on-surface-variant)}
+.body-m{font-size:.9375rem;line-height:1.4rem}
+.body-s{font-size:.8125rem;line-height:1.2rem}
+.label{font-size:.8125rem;line-height:1rem;font-weight:600;letter-spacing:.02em}
+
+/* Top App Bar */
+.top-app-bar{position:sticky;top:0;z-index:30;background:var(--surface-c);
+  box-shadow:var(--e1)}
+.bar-inner{max-width:var(--maxw);margin:0 auto;height:64px;display:flex;align-items:center;
+  justify-content:space-between;gap:var(--sp-4);padding:0 var(--gutter)}
+.bar-title{display:flex;align-items:center;gap:var(--sp-3);font-size:1.25rem;font-weight:500}
+.bar-logo{width:40px;height:40px;border-radius:var(--r-sm);display:grid;place-items:center;
+  background:var(--primary);color:var(--on-primary);font-size:20px;box-shadow:var(--e1)}
+.bar-sub{font-size:.8125rem;color:var(--on-surface-variant);font-weight:400}
+.bar-actions{display:flex;align-items:center;gap:var(--sp-2)}
+@media(max-width:560px){.bar-sub{display:none}}
+
+/* Buttons mit State-Layer */
+.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:40px;padding:0 24px;border:0;border-radius:var(--r-full);font-family:inherit;
+  font-size:.875rem;font-weight:600;letter-spacing:.02em;cursor:pointer;overflow:hidden;
+  white-space:nowrap;transition:box-shadow .2s}
+.btn::before{content:"";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .15s}
+.btn:hover::before{opacity:.08}.btn:active::before{opacity:.12}
+.btn-filled{background:var(--primary);color:var(--on-primary)}
+.btn-filled:hover{box-shadow:var(--e1)}
+.btn-tonal{background:var(--secondary-container);color:var(--on-secondary-container)}
+.btn-outlined{background:transparent;color:var(--secondary);border:1px solid var(--outline-variant)}
+.btn-text{background:transparent;color:var(--secondary);padding:0 12px}
+.btn-sm{height:32px;padding:0 16px;font-size:.8125rem}
+
+/* Layout-Raster */
+.container{max-width:var(--maxw);margin:0 auto;padding:var(--gutter)}
+.grid{display:grid;grid-template-columns:320px 1fr;gap:var(--gutter);align-items:start}
+@media(max-width:960px){.grid{grid-template-columns:1fr}}
+.rail{display:flex;flex-direction:column;gap:var(--sp-4);position:sticky;top:88px}
+@media(max-width:960px){.rail{position:static}}
+.content{display:flex;flex-direction:column;gap:var(--sp-4);min-width:0}
+
+/* Cards */
+.card{background:var(--surface-bright);border-radius:var(--r-lg);padding:var(--sp-5);
+  box-shadow:var(--e1)}
+.card-filled{background:var(--surface-c-low);box-shadow:none}
+.card>h2{margin-bottom:var(--sp-3)}
+
+/* Dropzone */
+.dropzone{border:2px dashed var(--outline-variant);border-radius:var(--r-md);
+  padding:var(--sp-5) var(--sp-4);text-align:center;background:var(--surface);
+  transition:border-color .15s,background .15s;cursor:pointer}
+.dropzone.drag{border-color:var(--primary);background:var(--primary-container)}
+.dz-icon{font-size:30px}
+.dz-text{font-weight:600;margin-top:var(--sp-1)}
+.dz-sub{font-size:.8125rem;color:var(--on-surface-variant);margin-top:2px}
+.meta{font-size:.8125rem;color:var(--secondary);margin-top:var(--sp-3);min-height:1rem;font-weight:600}
+.row-actions{display:flex;gap:var(--sp-2);margin-top:var(--sp-3);flex-wrap:wrap}
+
+/* Legende */
+.legend{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--sp-2)}
+.legend li{display:flex;align-items:center;gap:10px;font-size:.875rem;color:var(--on-surface-variant)}
+.swatch{width:14px;height:14px;border-radius:var(--r-xs);flex:none}
+.sw-new{background:var(--primary)}.sw-upd{background:var(--secondary)}.sw-ok{background:var(--tertiary)}
+.sw-dm{background:var(--features)}
+
+/* Empfehlungs-Banner */
+.banner{display:flex;align-items:center;gap:var(--sp-4);padding:var(--sp-4) var(--sp-5);
+  border-radius:var(--r-lg);background:var(--primary-container);color:var(--on-primary-container)}
+.banner.calm{background:var(--tertiary-container);color:var(--on-tertiary-container)}
+.banner .b-ic{font-size:28px}
+.banner h3{font-size:1.0625rem;font-weight:600}
+.banner p{margin:2px 0 0;font-size:.875rem;opacity:.9}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--sp-3)}
+@media(max-width:680px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface-bright);border-radius:var(--r-md);padding:var(--sp-4);box-shadow:var(--e1)}
+.kpi .n{font-size:2rem;font-weight:500;line-height:1}
+.kpi .l{font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--on-surface-variant);margin-top:6px}
+.kpi.k-new .n{color:var(--primary)}.kpi.k-upd .n{color:var(--secondary)}.kpi.k-ok .n{color:var(--tertiary)}
+
+/* Segmented Buttons (Tabs) */
+.segmented{display:inline-flex;border:1px solid var(--outline-variant);border-radius:var(--r-full);
+  overflow:hidden;background:var(--surface)}
+.seg{position:relative;border:0;background:transparent;padding:9px 18px;font-family:inherit;
+  font-size:.875rem;font-weight:600;color:var(--on-surface-variant);cursor:pointer;display:flex;
+  align-items:center;gap:8px;border-right:1px solid var(--outline-variant)}
+.seg:last-child{border-right:0}
+.seg.active{background:var(--secondary-container);color:var(--on-secondary-container)}
+.seg-count{font-size:.75rem;background:var(--surface-c-high);color:var(--on-surface-variant);
+  padding:1px 8px;border-radius:var(--r-full);font-weight:700}
+.seg.active .seg-count{background:var(--secondary);color:var(--on-secondary)}
+
+/* Gruppen */
+.group-head{display:flex;align-items:center;gap:10px;margin:var(--sp-4) 0 var(--sp-2)}
+.group-head .gdot{width:10px;height:10px;border-radius:var(--r-xs)}
+.gd-new{background:var(--primary)}.gd-upd{background:var(--secondary)}.gd-ok{background:var(--tertiary)}
+.group-head h4{font-size:.9375rem;font-weight:600}
+.group-head .gcount{font-size:.75rem;color:var(--on-surface-variant);background:var(--surface-c);
+  border-radius:var(--r-full);padding:1px 9px;font-weight:700}
+
+/* Kontakt-Karte */
+.contact{background:var(--surface-bright);border-radius:var(--r-lg);box-shadow:var(--e1);
+  padding:var(--sp-4) var(--sp-5);margin-bottom:var(--sp-3);border-left:4px solid transparent}
+.contact.t-new{border-left-color:var(--primary)}
+.contact.t-upd{border-left-color:var(--secondary)}
+.contact.t-ok{border-left-color:var(--tertiary)}
+.c-top{display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-3)}
+.avatar{width:44px;height:44px;border-radius:var(--r-full);flex:none;display:grid;place-items:center;
+  font-weight:600;color:#fff;font-size:1rem}
+.av-new{background:var(--primary)}.av-upd{background:var(--secondary)}.av-ok{background:var(--tertiary)}
+.c-id{flex:1;min-width:0}
+.c-id .nm{font-size:1.0625rem;font-weight:500;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.c-id .sb{font-size:.8125rem;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;
+  text-overflow:ellipsis}
+.pill{font-size:.75rem;font-weight:700;padding:4px 12px;border-radius:var(--r-full);flex:none}
+.pl-new{background:var(--primary-container);color:var(--on-primary-container)}
+.pl-upd{background:var(--secondary-container);color:var(--on-secondary-container)}
+.pl-ok{background:var(--tertiary-container);color:var(--on-tertiary-container)}
+.dm-chip{font-size:.6875rem;font-weight:700;padding:2px 9px;border-radius:var(--r-full);
+  background:var(--features-container);color:var(--on-features)}
+.c-body{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:var(--sp-5)}
+@media(max-width:680px){.c-body{grid-template-columns:1fr;gap:var(--sp-3)}}
+.block-h{font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--on-surface-variant);margin-bottom:8px}
+.kv{display:grid;grid-template-columns:92px 1fr;gap:4px 12px;font-size:.875rem}
+.kv dt{color:var(--on-surface-variant)}
+.kv dd{margin:0;overflow:hidden;text-overflow:ellipsis}
+.reco{border-radius:var(--r-md);background:var(--surface-c-low);padding:var(--sp-3) var(--sp-4)}
+.reco .lead{font-size:.875rem;font-weight:600;display:flex;align-items:center;gap:8px;margin-bottom:8px}
+table.diff{border-collapse:collapse;width:100%;font-size:.8125rem}
+table.diff th{text-align:left;padding:5px 8px;color:var(--on-surface-variant);font-weight:600;
+  border-bottom:1px solid var(--outline-variant)}
+table.diff td{padding:6px 8px;border-bottom:1px solid var(--surface-c-high);vertical-align:top}
+table.diff tr:last-child td{border-bottom:0}
+.old{color:var(--on-surface-variant);text-decoration:line-through}
+.arrow{color:var(--on-surface-variant);padding:0 6px}.newv{font-weight:600}
+.chips{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.chip{font-size:.8125rem;background:var(--surface-bright);border:1px solid var(--outline-variant);
+  border-radius:var(--r-sm);padding:7px 10px}
+.ok-note{font-size:.875rem;color:var(--tertiary);display:flex;align-items:center;gap:8px}
+
+/* Mail-Viewer */
+.mail{background:var(--surface-bright);border-radius:var(--r-lg);box-shadow:var(--e1);overflow:hidden}
+.mail-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--surface-c-low);
+  border-bottom:1px solid var(--outline-variant);font-size:.8125rem;color:var(--on-surface-variant)}
+.mail-dots{display:flex;gap:6px}.mail-dots i{width:11px;height:11px;border-radius:50%;display:block}
+.md1{background:#ff6058}.md2{background:#ffbd2e}.md3{background:#28ca42}
+.mail-body{padding:22px;max-height:640px;overflow:auto}
+
+/* Empty State */
+.empty{background:var(--surface-bright);border-radius:var(--r-lg);box-shadow:var(--e1);
+  padding:var(--sp-8) var(--sp-5);text-align:center}
+.empty .big{font-size:40px;margin-bottom:var(--sp-2)}
+.empty h3{font-size:1.25rem;margin-bottom:var(--sp-2)}
+.empty p{color:var(--on-surface-variant);max-width:460px;margin:0 auto var(--sp-4)}
+.steps{display:inline-flex;gap:var(--sp-2);flex-wrap:wrap;justify-content:center}
+.step{display:flex;align-items:center;gap:8px;font-size:.875rem;background:var(--surface-c-low);
+  border-radius:var(--r-full);padding:8px 16px}
+.step .num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:var(--on-primary);
+  font-size:.75rem;font-weight:700;display:grid;place-items:center}
+
+/* Skipped + Snackbar */
+.skip{background:var(--surface-c-low);border-radius:var(--r-md);padding:12px 16px;font-size:.8125rem;
+  color:var(--on-surface-variant);margin-top:var(--sp-3)}
+.snackbar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(120%);
+  background:#322F2C;color:#F4EFEA;padding:14px 18px;border-radius:var(--r-xs);box-shadow:var(--e3);
+  font-size:.875rem;max-width:90vw;transition:transform .25s;z-index:50}
+.snackbar.show{transform:translateX(-50%) translateY(0)}
+[hidden]{display:none!important}
+
+</style>
+</head>
+<body>
+<header class="top-app-bar">
+  <div class="bar-inner">
+    <div class="bar-title"><span class="bar-logo">📇</span>
+      <span>Signatur-Sync <span class="bar-sub">E-Mail-Signaturen ↔ CRM</span></span></div>
+    <div class="bar-actions">
+      <button id="btnDemo" class="btn btn-text">Demodaten</button>
+      <label class="btn btn-tonal" for="fileInput">＋ E-Mails einfügen</label>
+      <input id="fileInput" type="file" accept=".eml,.msg" multiple hidden>
+    </div>
+  </div>
+</header>
+
+<main class="container grid">
+  <aside class="rail">
+    <section class="card card-filled">
+      <h2 class="title-s">E-Mails einfügen</h2>
+      <div id="dropzone" class="dropzone">
+        <div class="dz-icon">📥</div>
+        <div class="dz-text">.eml / .msg hierher ziehen</div>
+        <div class="dz-sub">oder <span class="link" id="pick">Dateien wählen</span></div>
+      </div>
+      <div id="fileMeta" class="meta"></div>
+      <div class="row-actions">
+        <button id="btnDemo2" class="btn btn-outlined btn-sm">Demodaten laden</button>
+        <button id="btnClear" class="btn btn-text btn-sm">Leeren</button>
+      </div>
+    </section>
+    <section class="card card-filled">
+      <h2 class="title-s">CRM (Demo)</h2>
+      <p class="body-s muted" id="crmInfo"></p>
+    </section>
+    <section class="card card-filled">
+      <h2 class="title-s">Legende</h2>
+      <ul class="legend">
+        <li><span class="swatch sw-new"></span> Neu im CRM anlegen (Lead)</li>
+        <li><span class="swatch sw-upd"></span> Im CRM aktualisieren</li>
+        <li><span class="swatch sw-ok"></span> Aktuell – keine Aktion</li>
+        <li><span class="swatch sw-dm"></span> Entscheider:in (Feature-Signal)</li>
+      </ul>
+    </section>
+  </aside>
+
+  <section class="content">
+    <div id="banner" class="banner" hidden></div>
+    <div id="kpis" class="kpis" hidden></div>
+    <div class="segmented" id="tabs" hidden>
+      <button class="seg active" data-tab="reco">Empfehlungen <span class="seg-count" id="cReco">0</span></button>
+      <button class="seg" data-tab="all">Alle Kontakte <span class="seg-count" id="cAll">0</span></button>
+      <button class="seg" data-tab="mail">Hinweis-Mail</button>
+    </div>
+    <div id="paneReco" class="pane"></div>
+    <div id="paneAll" class="pane" hidden></div>
+    <div id="paneMail" class="pane" hidden></div>
+    <div id="empty" class="empty">
+      <div class="big">📭</div>
+      <h3>E-Mails einfügen</h3>
+      <p>Ziehe <code>.eml</code>- oder <code>.msg</code>-Dateien in das Feld links
+         oder lade die Demodaten. Signatur-Analyse und CRM-Abgleich laufen komplett
+         in deinem Browser – nichts wird hochgeladen.</p>
+      <div class="steps">
+        <span class="step"><span class="num">1</span> Mails einfügen</span>
+        <span class="step"><span class="num">2</span> Automatischer Abgleich</span>
+        <span class="step"><span class="num">3</span> Empfehlungen prüfen</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="snackbar" class="snackbar"></div>
+
+<script>
+/* Signatur-Sync · Kernlogik (Browser + Node)
+ * Portiert aus dem Python-Workflow: .eml/.msg-Parsing, Signatur-Extraktion,
+ * CRM-Abgleich. Keine Abhaengigkeiten – laeuft im Browser und unter Node.
+ */
+(function (root) {
+  "use strict";
+
+  // ---------------------------------------------------------------- Muster
+  const EMAIL_RE = /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/;
+  const EMAIL_RE_G = /[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}/g;
+  const URL_RE_G = /\b((?:https?:\/\/)?(?:www\.)?[A-Za-z0-9\-]+(?:\.[A-Za-z0-9\-]+)+(?:\/[^\s|<>]*)?)/g;
+  const PHONE_RE = /(\+?\(?\d[\d\s().\-/]{5,}\d)/;
+  const PHONE_RE_G = /(\+?\(?\d[\d\s().\-/]{5,}\d)/g;
+  const LINKEDIN_RE = /(https?:\/\/)?([a-z]{2,3}\.)?linkedin\.com\/[^\s|<>]+/i;
+
+  const GREETINGS = [
+    "mit freundlichen grüßen", "mit freundlichen gruessen", "freundliche grüße",
+    "freundliche gruesse", "viele grüße", "viele gruesse", "beste grüße",
+    "beste gruesse", "herzliche grüße", "liebe grüße", "mfg", "lg",
+    "best regards", "kind regards", "warm regards", "best wishes",
+    "regards", "cheers", "sincerely", "yours sincerely", "thanks and regards",
+    "thank you", "vielen dank", "danke"
+  ];
+  const PHONE_LABELS = {
+    phone: ["tel", "tel.", "phone", "fon", "fixed", "festnetz", "office", "büro",
+            "buero", "t:", "p:", "ph:", "direct", "durchwahl"],
+    mobile: ["mobil", "mobile", "cell", "cellular", "handy", "m:", "mob", "mo:"],
+    fax: ["fax", "f:", "telefax"]
+  };
+  const COMPANY_HINTS = ["gmbh", "ag", "kg", "ohg", "se", "e.u.", "e.k.", "gbr",
+    "ug", "mbh", "inc", "inc.", "llc", "ltd", "ltd.", "plc", "corp",
+    "corporation", "co.", "group", "gruppe", "holding", "partners", "& co"];
+  const TITLE_KEYWORDS = {
+    "C-Level": ["ceo", "cfo", "cto", "coo", "cio", "cmo", "cdo", "geschäftsführer",
+      "geschaeftsfuehrer", "geschäftsführerin", "vorstand", "managing director",
+      "owner", "inhaber", "gesellschafter", "president", "partner"],
+    "Leitung": ["head of", "leiter", "leiterin", "leitung", "director", "direktor",
+      "vp ", "vice president", "vorstandsvorsitz", "abteilungsleiter",
+      "teamleiter", "bereichsleiter", "prokurist"],
+    "Management": ["manager", "managerin", "lead", "principal", "senior manager",
+      "projektleiter", "key account"],
+    "Fachkraft": ["engineer", "developer", "entwickler", "consultant", "berater",
+      "specialist", "spezialist", "analyst", "referent", "sachbearbeiter",
+      "architect", "designer", "scientist", "expert", "associate"]
+  };
+  const DECISION_MAKER_LEVELS = new Set(["C-Level", "Leitung"]);
+  const NON_NAME_RE = /@|http|www|tel|mobil|fax|gmbh|\bag\b|\d|straße|strasse|str\.|platz|e-mail|mail:|phone|grüße|gruesse|regards/i;
+  const GRADE_RE = /\b(dr|prof|dipl|mag|ing|mba|msc|bsc|ba|ma)\.?\b/gi;
+
+  // ---------------------------------------------------------------- Utils
+  function escapeHtml(v) {
+    return (v || "").replace(/[&<>"']/g, function (c) {
+      return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c];
+    });
+  }
+  function allMatches(re, text) {
+    const out = []; let m; re.lastIndex = 0;
+    while ((m = re.exec(text)) !== null) { out.push(m); if (m.index === re.lastIndex) re.lastIndex++; }
+    return out;
+  }
+  function hasCompanyHint(text) {
+    const low = (text || "").toLowerCase();
+    return COMPANY_HINTS.some(function (h) {
+      return new RegExp("\\b" + h.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b").test(low);
+    });
+  }
+
+  // -------------------------------------------------------------- HTML→Text
+  function htmlToText(html) {
+    if (!html) return "";
+    let t = html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ");
+    t = t.replace(/<\s*br\s*\/?\s*>/gi, "\n");
+    t = t.replace(/<\/\s*(p|div|tr|li|h[1-6])\s*>/gi, "\n");
+    t = t.replace(/<[^>]+>/g, "");
+    t = t.replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/&lt;/gi, "<")
+         .replace(/&gt;/gi, ">").replace(/&quot;/gi, '"').replace(/&#39;/gi, "'")
+         .replace(/&auml;/gi, "ä").replace(/&ouml;/gi, "ö").replace(/&uuml;/gi, "ü")
+         .replace(/&szlig;/gi, "ß");
+    const lines = t.split(/\r?\n/).map(function (l) { return l.replace(/[ \t]+/g, " ").trim(); });
+    const out = []; let blank = false;
+    lines.forEach(function (l) {
+      if (l) { out.push(l); blank = false; } else if (!blank) { out.push(""); blank = true; }
+    });
+    return out.join("\n").trim();
+  }
+
+  // -------------------------------------------------------- Signaturblock
+  function stripQuoted(lines) {
+    const out = [];
+    for (const ln of lines) {
+      const low = ln.trim().toLowerCase();
+      if (ln.replace(/^\s+/, "").startsWith(">")) break;
+      if (/^(von|from|gesendet|sent):/.test(low) && ln.indexOf(":") >= 0) break;
+      if (/^-{3,}original/.test(low) || low.startsWith("-----")) break;
+      if (/^(am|on)\b.*\b(schrieb|wrote):/.test(low)) break;
+      out.push(ln);
+    }
+    return out;
+  }
+  function extractSignatureBlock(body) {
+    if (!body) return "";
+    const lines = stripQuoted(body.split(/\r?\n/));
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim() === "--" || lines[i].trim() === "") {
+        if (lines[i].trim() === "--") {
+          const block = lines.slice(i + 1).join("\n").trim();
+          if (block) return block;
+        }
+      }
+    }
+    let anchor = null;
+    for (let i = 0; i < lines.length; i++) {
+      const low = lines[i].trim().toLowerCase().replace(/[,.!]+$/, "").trim();
+      if (GREETINGS.indexOf(low) >= 0 || GREETINGS.some(function (g) { return low.startsWith(g); })) anchor = i;
+    }
+    if (anchor !== null) {
+      const block = lines.slice(anchor + 1).join("\n").trim();
+      if (block) return block;
+    }
+    const nonempty = lines.filter(function (l) { return l.trim(); });
+    const tail = nonempty.slice(-8).join("\n");
+    if (EMAIL_RE.test(tail) || PHONE_RE.test(tail) || hasCompanyHint(tail)) return tail.trim();
+    return "";
+  }
+
+  // -------------------------------------------------------- Feld-Parsing
+  function classifyPhoneLine(line) {
+    const low = line.toLowerCase();
+    for (const field in PHONE_LABELS) {
+      if (PHONE_LABELS[field].some(function (lab) { return low.indexOf(lab) >= 0; })) return field;
+    }
+    return null;
+  }
+  function detectSeniority(title) {
+    const low = (title || "").toLowerCase();
+    for (const level in TITLE_KEYWORDS) {
+      if (TITLE_KEYWORDS[level].some(function (kw) { return low.indexOf(kw) >= 0; })) return level;
+    }
+    return "";
+  }
+  function looksLikeName(line) {
+    let s = line.trim().replace(/^\|+|\|+$/g, "").trim();
+    if (!s || NON_NAME_RE.test(s)) return false;
+    s = s.replace(GRADE_RE, "");
+    const words = s.trim().split(/[\s,]+/).filter(Boolean);
+    if (!(words.length > 1 && words.length <= 4)) return false;
+    const capish = words.filter(function (w) { return w[0] && w[0] === w[0].toUpperCase() && w[0] !== w[0].toLowerCase(); }).length;
+    return capish >= Math.max(2, words.length - 1);
+  }
+  function splitName(full) {
+    const cleaned = full.replace(GRADE_RE, "").trim();
+    const parts = cleaned.split(/\s+/).filter(function (p) { return p && /[A-Za-zÀ-ÿ]/.test(p); });
+    if (parts.length >= 2) return [parts[0], parts.slice(1).join(" ")];
+    return [parts[0] || cleaned, ""];
+  }
+  function findCompany(lines, used) {
+    for (let i = 0; i < lines.length; i++) {
+      if (used.has(i)) continue;
+      if (hasCompanyHint(lines[i])) {
+        const chunks = lines[i].split(/\s*[|·•]\s*/);
+        for (const c of chunks) if (hasCompanyHint(c)) return [c.replace(/^[\s,;|]+|[\s,;|]+$/g, ""), i];
+        return [lines[i].replace(/^[\s,;|]+|[\s,;|]+$/g, ""), i];
+      }
+    }
+    return ["", -1];
+  }
+  function findAddress(lines, used) {
+    const street = /\b(stra(ß|ss)e|str\.|gasse|weg|platz|allee|ring|road|rd\.|street|st\.|ave)\b/i;
+    const plz = /\b(\d{4,5})\s+([A-Za-zÄÖÜäöüß.\-]+)/;
+    const parts = []; let location = "";
+    for (let i = 0; i < lines.length; i++) {
+      if (used.has(i)) continue;
+      if (street.test(lines[i]) || plz.test(lines[i])) {
+        parts.push(lines[i].replace(/^[\s,;|]+|[\s,;|]+$/g, ""));
+        const m = lines[i].match(plz);
+        if (m) location = m[2].replace(/^[.\s,-]+|[.\s,-]+$/g, "");
+      }
+    }
+    return [parts.join(", "), location];
+  }
+
+  function parseSignature(block, fallback) {
+    const sig = {
+      raw_block: block || "", full_name: "", first_name: "", last_name: "",
+      job_title: "", department: "", company: "", email: "", phone: "",
+      mobile: "", fax: "", website: "", linkedin: "", address: "",
+      seniority: "", is_decision_maker: false, location: ""
+    };
+    const lines = (block || "").split(/\r?\n/).map(function (l) { return l.trim(); }).filter(Boolean);
+    const used = new Set();
+
+    const em = (block || "").match(EMAIL_RE);
+    if (em) sig.email = em[0].toLowerCase();
+    else if (fallback && fallback.from_email) sig.email = fallback.from_email;
+
+    const lk = (block || "").match(LINKEDIN_RE);
+    if (lk) sig.linkedin = lk[0];
+
+    const urlText = (block || "").replace(EMAIL_RE_G, " ");
+    for (const um of allMatches(URL_RE_G, urlText)) {
+      let cand = um[1].trim().replace(/[.,;]+$/, "");
+      if (cand.indexOf("@") >= 0 || /linkedin\.com/i.test(cand)) continue;
+      if (cand.indexOf(".") >= 0) { sig.website = cand; break; }
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      if (!PHONE_RE.test(lines[i])) continue;
+      const kind = classifyPhoneLine(lines[i]) || "phone";
+      const nums = allMatches(PHONE_RE_G, lines[i]).map(function (m) { return m[1].trim(); });
+      if (!nums.length) continue;
+      const number = nums[0];
+      if (kind === "mobile" && !sig.mobile) sig.mobile = number;
+      else if (kind === "fax" && !sig.fax) sig.fax = number;
+      else if (!sig.phone) sig.phone = number;
+      used.add(i);
+    }
+
+    let nameIdx = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (used.has(i)) continue;
+      if (looksLikeName(lines[i])) {
+        sig.full_name = lines[i].replace(/^\|+|\|+$/g, "").trim();
+        nameIdx = i; used.add(i); break;
+      }
+    }
+    if (!sig.full_name && fallback && fallback.from_name) sig.full_name = fallback.from_name.trim();
+
+    const comp = findCompany(lines, used);
+    if (comp[0]) { sig.company = comp[0]; used.add(comp[1]); }
+
+    let title = "";
+    if (nameIdx >= 0 && nameIdx + 1 < lines.length && !used.has(nameIdx + 1)) {
+      const cand = lines[nameIdx + 1];
+      if (!EMAIL_RE.test(cand) && !PHONE_RE.test(cand)) { title = cand.replace(/^[\s,;|]+|[\s,;|]+$/g, ""); used.add(nameIdx + 1); }
+    }
+    if (!title) {
+      for (let i = 0; i < lines.length; i++) {
+        if (used.has(i)) continue;
+        if (detectSeniority(lines[i])) { title = lines[i].split(/\s*[|·•]\s*/)[0].replace(/^[\s,;|]+|[\s,;|]+$/g, ""); used.add(i); break; }
+      }
+    }
+    sig.job_title = title;
+
+    for (let i = 0; i < lines.length; i++) {
+      if (used.has(i)) continue;
+      if (/\b(abteilung|department|team|bereich|unit)\b/i.test(lines[i])) { sig.department = lines[i].replace(/^[\s,;|]+|[\s,;|]+$/g, ""); used.add(i); break; }
+    }
+
+    const addr = findAddress(lines, used);
+    sig.address = addr[0]; sig.location = addr[1];
+
+    if (sig.full_name) { const sp = splitName(sig.full_name); sig.first_name = sp[0]; sig.last_name = sp[1]; }
+    sig.seniority = detectSeniority(sig.job_title);
+    sig.is_decision_maker = DECISION_MAKER_LEVELS.has(sig.seniority);
+    return sig;
+  }
+
+  function extractFromEmail(mail) {
+    let body = mail.text_body || "";
+    let block = extractSignatureBlock(body);
+    if (!block && mail.html_body) block = extractSignatureBlock(htmlToText(mail.html_body));
+    if (!block) block = stripQuoted(body.split(/\r?\n/)).join("\n").trim();
+    return parseSignature(block, mail);
+  }
+
+  function signatureIsEmpty(sig) {
+    return !(sig.full_name || sig.job_title || sig.company || sig.phone ||
+             sig.mobile || sig.email || sig.website);
+  }
+
+  // ------------------------------------------------------------- Abgleich
+  const COMPARED_FIELDS = [
+    ["job_title", "Position/Titel"], ["department", "Abteilung"],
+    ["company", "Firma"], ["phone", "Telefon"], ["mobile", "Mobil"],
+    ["website", "Website"]
+  ];
+  function norm(v) { return (v || "").toLowerCase().split(/\s+/).filter(Boolean).join(" "); }
+  function normPhone(v) {
+    if (!v) return "";
+    let d = (v || "").replace(/[^\d+]/g, "");
+    return d.startsWith("+") ? d : d.replace(/^0+/, "");
+  }
+  function valuesMatch(field, a, b) {
+    if (field === "phone" || field === "mobile") {
+      const na = normPhone(a), nb = normPhone(b);
+      if (!na || !nb) return na === nb;
+      return na === nb || na.slice(-7) === nb.slice(-7);
+    }
+    return norm(a) === norm(b);
+  }
+  function deriveSignals(sig, crm, discrepancies) {
+    const signals = [];
+    const changed = new Set(discrepancies.filter(function (d) { return d.change_type === "FIELD_CHANGED"; }).map(function (d) { return d.field; }));
+    if (changed.has("company")) signals.push("🔁 Firmenwechsel erkannt – Kontakt prüfen (mögliche neue Opportunity bzw. Risiko beim alten Account).");
+    if (changed.has("job_title")) {
+      let n = "📈 Positionswechsel/Beförderung erkannt – Rolle im CRM aktualisieren.";
+      if (sig.is_decision_maker) n += " Kontakt ist jetzt Entscheider:in – für Vertrieb relevant.";
+      signals.push(n);
+    }
+    if (changed.has("phone") || changed.has("mobile")) signals.push("☎️ Geänderte Telefonnummer – Stammdaten aktualisieren.");
+    if (changed.has("department")) signals.push("🏷️ Abteilung/Funktion hat sich geändert.");
+    if (sig.is_decision_maker && !changed.has("job_title")) signals.push("⭐ Entscheider:in laut Signatur – Priorisierung im Vertrieb prüfen.");
+    return signals;
+  }
+  function findCrm(crmList, email, name) {
+    const e = (email || "").toLowerCase();
+    if (e) { const hit = crmList.find(function (c) { return (c.email || "").toLowerCase() === e; }); if (hit) return hit; }
+    const n = norm(name);
+    if (n) return crmList.find(function (c) { return norm(c.full_name) === n; }) || null;
+    return null;
+  }
+  function reconcile(sig, crmList, source) {
+    const res = { source: source || "", signature: sig, crm_contact: null,
+      matched: false, match_key: "", discrepancies: [], business_signals: [], notes: [] };
+    const crm = findCrm(crmList, sig.email, sig.full_name);
+    if (!crm) {
+      COMPARED_FIELDS.forEach(function (f) {
+        const v = sig[f[0]]; if (v) res.discrepancies.push({ field: f[0], change_type: "FIELD_NEW_IN_CRM", signature_value: v, crm_value: "" });
+      });
+      res.business_signals.push("🆕 Kontakt nicht im CRM gefunden – als neuen Lead/Kontakt anlegen.");
+      if (sig.is_decision_maker) res.business_signals.push("⭐ Neuer Kontakt ist laut Signatur Entscheider:in.");
+      res.notes.push("Kein CRM-Treffer für E-Mail '" + (sig.email || "—") + "' / Name '" + (sig.full_name || "—") + "'.");
+      return res;
+    }
+    res.matched = true; res.crm_contact = crm;
+    res.match_key = (sig.email && sig.email === (crm.email || "").toLowerCase()) ? "email" : "name";
+    COMPARED_FIELDS.forEach(function (f) {
+      const field = f[0]; const sv = sig[field] || ""; const cv = crm[field] || "";
+      if (!sv) return;
+      if (!cv) res.discrepancies.push({ field: field, change_type: "FIELD_NEW_IN_CRM", signature_value: sv, crm_value: "" });
+      else if (valuesMatch(field, sv, cv)) res.discrepancies.push({ field: field, change_type: "MATCH", signature_value: sv, crm_value: cv });
+      else res.discrepancies.push({ field: field, change_type: "FIELD_CHANGED", signature_value: sv, crm_value: cv });
+    });
+    res.business_signals = deriveSignals(sig, crm, res.discrepancies);
+    return res;
+  }
+  function hasActionableChanges(res) {
+    return (!res.matched) || res.discrepancies.some(function (d) {
+      return d.change_type === "FIELD_CHANGED" || d.change_type === "FIELD_NEW_IN_CRM";
+    });
+  }
+  function tone(res) { return !res.matched ? "new" : (hasActionableChanges(res) ? "upd" : "ok"); }
+
+  // --------------------------------------------------------------- .eml
+  function decodeBytes(bytes, charset) {
+    const cs = (charset || "utf-8").toLowerCase().replace("utf8", "utf-8");
+    try { return new TextDecoder(cs).decode(bytes); }
+    catch (e) { try { return new TextDecoder("utf-8").decode(bytes); } catch (e2) { return String.fromCharCode.apply(null, bytes); } }
+  }
+  function b64ToBytes(s) {
+    const clean = (s || "").replace(/[^A-Za-z0-9+/=]/g, "");
+    const bin = (typeof atob === "function") ? atob(clean) : Buffer.from(clean, "base64").toString("binary");
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function qpToBytes(s) {
+    s = s.replace(/=\r?\n/g, "");
+    const out = [];
+    for (let i = 0; i < s.length; i++) {
+      if (s[i] === "=" && i + 2 < s.length) { out.push(parseInt(s.substr(i + 1, 2), 16)); i += 2; }
+      else out.push(s.charCodeAt(i));
+    }
+    return new Uint8Array(out);
+  }
+  function decodeRFC2047(value) {
+    if (!value || value.indexOf("=?") < 0) return value || "";
+    return value.replace(/=\?([^?]+)\?([bBqQ])\?([^?]*)\?=/g, function (_, cs, enc, txt) {
+      let bytes;
+      if (enc.toUpperCase() === "B") bytes = b64ToBytes(txt);
+      else bytes = qpToBytes(txt.replace(/_/g, " "));
+      return decodeBytes(bytes, cs);
+    });
+  }
+  function parseHeaders(headerText) {
+    const headers = {}; const lines = headerText.split(/\r?\n/); let cur = null;
+    for (const ln of lines) {
+      if (/^[ \t]/.test(ln) && cur) { headers[cur] += " " + ln.trim(); continue; }
+      const idx = ln.indexOf(":");
+      if (idx > 0) { cur = ln.slice(0, idx).trim().toLowerCase(); headers[cur] = ln.slice(idx + 1).trim(); }
+    }
+    return headers;
+  }
+  function getBoundary(ct) { const m = (ct || "").match(/boundary="?([^";]+)"?/i); return m ? m[1] : ""; }
+  function getCharset(ct) { const m = (ct || "").match(/charset="?([^";]+)"?/i); return m ? m[1] : "utf-8"; }
+
+  function decodePart(rawBody, headers) {
+    const cte = (headers["content-transfer-encoding"] || "7bit").toLowerCase();
+    const charset = getCharset(headers["content-type"]);
+    let bytes;
+    if (cte.indexOf("base64") >= 0) bytes = b64ToBytes(rawBody);
+    else if (cte.indexOf("quoted-printable") >= 0) bytes = qpToBytes(rawBody);
+    else return rawBody;
+    return decodeBytes(bytes, charset);
+  }
+
+  function walkParts(rawBody, headers, acc) {
+    const ct = headers["content-type"] || "text/plain";
+    if (/multipart\//i.test(ct)) {
+      const boundary = getBoundary(ct);
+      if (!boundary) return;
+      const segs = rawBody.split("--" + boundary);
+      for (let seg of segs) {
+        seg = seg.replace(/^\r?\n/, "");
+        if (!seg || seg.startsWith("--")) continue;
+        const sp = seg.indexOf("\r\n\r\n") >= 0 ? seg.indexOf("\r\n\r\n") : seg.indexOf("\n\n");
+        if (sp < 0) continue;
+        const hsep = seg.indexOf("\r\n\r\n") >= 0 ? 4 : 2;
+        const ph = parseHeaders(seg.slice(0, sp));
+        const pb = seg.slice(sp + hsep);
+        walkParts(pb, ph, acc);
+      }
+    } else if (/text\/plain/i.test(ct)) {
+      if (!acc.text) acc.text = decodePart(rawBody, headers);
+    } else if (/text\/html/i.test(ct)) {
+      if (!acc.html) acc.html = decodePart(rawBody, headers);
+    }
+  }
+
+  function parseAddr(value) {
+    if (!value) return ["", ""];
+    const m = value.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+    if (m) return [m[1].trim(), m[2].trim()];
+    if (value.indexOf("@") >= 0) return ["", value.trim()];
+    return [value.trim(), ""];
+  }
+
+  function parseEml(raw, source) {
+    raw = raw.replace(/\r\n/g, "\n");
+    const sep = raw.indexOf("\n\n");
+    const headerText = sep >= 0 ? raw.slice(0, sep) : raw;
+    const bodyRaw = (sep >= 0 ? raw.slice(sep + 2) : "").replace(/\n/g, "\r\n");
+    const headers = parseHeaders(headerText);
+    const fromParsed = parseAddr(decodeRFC2047(headers["from"] || ""));
+    const acc = {};
+    walkParts(bodyRaw, headers, acc);
+    let text = acc.text || ""; let html = acc.html || "";
+    if (!text && !html) {
+      if (/text\/html/i.test(headers["content-type"] || "")) html = decodePart(bodyRaw, headers);
+      else text = decodePart(bodyRaw, headers);
+    }
+    if (!text && html) text = htmlToText(html);
+    return {
+      source: source || "", from_name: fromParsed[0] || "",
+      from_email: (fromParsed[1] || "").toLowerCase(),
+      subject: decodeRFC2047(headers["subject"] || ""),
+      date: headers["date"] || "", text_body: text || "", html_body: html || ""
+    };
+  }
+
+  // --------------------------------------------------------------- .msg (OLE/CFB)
+  const ENDOFCHAIN = 0xFFFFFFFE, FREESECT = 0xFFFFFFFF;
+  function parseMsg(uint8, source) {
+    const dv = new DataView(uint8.buffer, uint8.byteOffset, uint8.byteLength);
+    const sig = [0xD0, 0xCF, 0x11, 0xE0, 0xA1, 0xB1, 0x1A, 0xE1];
+    for (let i = 0; i < 8; i++) if (uint8[i] !== sig[i]) throw new Error("Keine gültige .msg/OLE-Datei");
+    const sectorSize = 1 << dv.getUint16(30, true);
+    const miniSize = 1 << dv.getUint16(32, true);
+    const numFat = dv.getUint32(44, true);
+    const firstDir = dv.getUint32(48, true);
+    const miniCutoff = dv.getUint32(56, true);
+    const firstMiniFat = dv.getUint32(60, true);
+    const numMiniFat = dv.getUint32(64, true);
+    let firstDifat = dv.getUint32(68, true);
+    const numDifat = dv.getUint32(72, true);
+    const u32 = function (off) { return dv.getUint32(off, true); };
+    const secOff = function (s) { return (s + 1) * sectorSize; };
+
+    // DIFAT -> Liste der FAT-Sektoren
+    const fatSectors = [];
+    for (let i = 0; i < 109; i++) { const v = u32(76 + i * 4); if (v !== FREESECT && v !== ENDOFCHAIN) fatSectors.push(v); }
+    let ds = firstDifat, guard = 0;
+    while (ds !== ENDOFCHAIN && ds !== FREESECT && guard++ < 100000) {
+      const base = secOff(ds); const per = sectorSize / 4 - 1;
+      for (let i = 0; i < per; i++) { const v = u32(base + i * 4); if (v !== FREESECT && v !== ENDOFCHAIN) fatSectors.push(v); }
+      ds = u32(base + per * 4);
+    }
+    // FAT
+    const fat = [];
+    fatSectors.forEach(function (fs) { const base = secOff(fs); for (let i = 0; i < sectorSize / 4; i++) fat.push(u32(base + i * 4)); });
+
+    function readChain(start, sizeLimit) {
+      const parts = []; let s = start, total = 0, guard = 0;
+      while (s !== ENDOFCHAIN && s !== FREESECT && guard++ < 10000000) {
+        const off = secOff(s);
+        parts.push(uint8.subarray(off, off + sectorSize)); total += sectorSize;
+        s = fat[s]; if (s === undefined) break;
+        if (sizeLimit && total >= sizeLimit) break;
+      }
+      const out = new Uint8Array(total); let p = 0;
+      parts.forEach(function (a) { out.set(a, p); p += a.length; });
+      return sizeLimit ? out.subarray(0, sizeLimit) : out;
+    }
+
+    // Directory
+    const dirBytes = readChain(firstDir);
+    const ddv = new DataView(dirBytes.buffer, dirBytes.byteOffset, dirBytes.byteLength);
+    const entries = [];
+    for (let off = 0; off + 128 <= dirBytes.length; off += 128) {
+      const nameLen = ddv.getUint16(off + 64, true);
+      const objType = dirBytes[off + 66];
+      if (objType === 0) continue;
+      let name = "";
+      if (nameLen > 2) name = new TextDecoder("utf-16le").decode(dirBytes.subarray(off, off + nameLen - 2));
+      entries.push({ name: name, objType: objType, start: ddv.getUint32(off + 116, true), size: ddv.getUint32(off + 120, true) });
+    }
+    const root = entries.find(function (e) { return e.objType === 5; });
+    const miniStream = root ? readChain(root.start, root.size) : new Uint8Array(0);
+    // Mini-FAT
+    const miniFat = [];
+    if (firstMiniFat !== ENDOFCHAIN) {
+      const mfb = readChain(firstMiniFat);
+      const mdv = new DataView(mfb.buffer, mfb.byteOffset, mfb.byteLength);
+      for (let i = 0; i + 4 <= mfb.length; i += 4) miniFat.push(mdv.getUint32(i, true));
+    }
+    function readMini(start, size) {
+      const parts = []; let s = start, total = 0, guard = 0;
+      while (s !== ENDOFCHAIN && s !== FREESECT && guard++ < 10000000) {
+        const off = s * miniSize; parts.push(miniStream.subarray(off, off + miniSize)); total += miniSize;
+        s = miniFat[s]; if (s === undefined) break;
+      }
+      const out = new Uint8Array(total); let p = 0; parts.forEach(function (a) { out.set(a, p); p += a.length; });
+      return out.subarray(0, size);
+    }
+    function streamData(entry) {
+      if (entry.size >= miniCutoff) return readChain(entry.start, entry.size);
+      return readMini(entry.start, entry.size);
+    }
+    const streams = {};
+    entries.forEach(function (e) { if (e.objType === 2 && e.name.indexOf("__substg1.0_") === 0) streams[e.name.split("_").pop().toUpperCase()] = streamData(e); });
+
+    function getStr(pid) {
+      let d = streams[pid + "001F"]; if (d) return new TextDecoder("utf-16le").decode(d);
+      d = streams[pid + "001E"]; if (d) return decodeBytes(d, "cp1252"); return "";
+    }
+    const subject = getStr("0037");
+    const body = getStr("1000");
+    let html = "";
+    const hb = streams["10130102"];
+    if (hb) html = decodeBytes(hb, "utf-8");
+    const headers = getStr("007D");
+    let fromName = getStr("0C1A"), fromEmail = "";
+    ["5D01", "0C1F", "5D02", "0065"].some(function (pid) { const v = getStr(pid); if (v.indexOf("@") >= 0) { fromEmail = v; return true; } return false; });
+    let date = "";
+    if (headers) {
+      const h = parseHeaders(headers.replace(/\r\n/g, "\n"));
+      date = h["date"] || "";
+      const fp = parseAddr(decodeRFC2047(h["from"] || ""));
+      if (fp[1]) { fromName = fp[0] || fromName; fromEmail = fp[1]; }
+    }
+    let text = body;
+    if (!text && html) text = htmlToText(html);
+    return {
+      source: source || "", from_name: (fromName || "").trim(),
+      from_email: (fromEmail || "").trim().toLowerCase(), subject: (subject || "").trim(),
+      date: date, text_body: text || "", html_body: html || ""
+    };
+  }
+
+  // --------------------------------------------------------------- API
+  function analyze(loaded, crmList) {
+    const sig = extractFromEmail(loaded);
+    if (signatureIsEmpty(sig)) return { skipped: true, source: loaded.source, reason: "Keine verwertbare Signatur gefunden." };
+    const res = reconcile(sig, crmList, loaded.source);
+    res.tone = tone(res);
+    res.has_actionable = hasActionableChanges(res);
+    return res;
+  }
+
+  const API = {
+    parseEml: parseEml, parseMsg: parseMsg, htmlToText: htmlToText,
+    extractSignatureBlock: extractSignatureBlock, parseSignature: parseSignature,
+    extractFromEmail: extractFromEmail, reconcile: reconcile, analyze: analyze,
+    tone: tone, hasActionableChanges: hasActionableChanges, escapeHtml: escapeHtml,
+    signatureIsEmpty: signatureIsEmpty, splitName: splitName
+  };
+  if (typeof module !== "undefined" && module.exports) module.exports = API;
+  root.SignaturCore = API;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+/* Auto-generiert von webapp/generate_data.py – nicht von Hand aendern. */
+window.CRM_DATA = [
+  {
+    "crm_id": "C-1001",
+    "full_name": "Anna Berger",
+    "first_name": "Anna",
+    "last_name": "Berger",
+    "job_title": "Senior Consultant",
+    "department": "Consulting",
+    "company": "Muster Tech GmbH",
+    "email": "anna.berger@muster-tech.de",
+    "phone": "+49 89 1234-100",
+    "mobile": "+49 170 111 2233",
+    "website": "www.muster-tech.de"
+  },
+  {
+    "crm_id": "C-1002",
+    "full_name": "Thomas Klein",
+    "first_name": "Thomas",
+    "last_name": "Klein",
+    "job_title": "Vertriebsleiter",
+    "department": "Vertrieb",
+    "company": "Nordwind AG",
+    "email": "thomas.klein@nordwind.at",
+    "phone": "+43 1 5550 100",
+    "mobile": "+43 660 1234567",
+    "website": "www.nordwind.at"
+  },
+  {
+    "crm_id": "C-1003",
+    "full_name": "Marco Rossi",
+    "first_name": "Marco",
+    "last_name": "Rossi",
+    "job_title": "Account Manager",
+    "department": "Sales",
+    "company": "Helvetia Solutions AG",
+    "email": "marco.rossi@helvetia-solutions.ch",
+    "phone": "+41 44 200 30 40",
+    "mobile": "",
+    "website": "www.helvetia-solutions.ch"
+  },
+  {
+    "crm_id": "C-1004",
+    "full_name": "Sandra Bauer",
+    "first_name": "Sandra",
+    "last_name": "Bauer",
+    "job_title": "Senior Developer",
+    "department": "Entwicklung",
+    "company": "TechnoVision GmbH",
+    "email": "sandra.bauer@technovision.de",
+    "phone": "+49 30 7788 100",
+    "mobile": "+49 151 2233445",
+    "website": "www.technovision.de"
+  }
+];
+window.DEMO_EMAILS = [{"name": "01_anna_berger_jobwechsel.eml", "type": "eml", "content": "From: Anna Berger <anna.berger@muster-tech.de>\nTo: vertrieb@unsere-firma.de\nSubject: Re: Angebot Projekt Phoenix\nDate: Tue, 27 May 2026 09:14:00 +0200\nContent-Type: text/plain; charset=\"utf-8\"\n\nHallo zusammen,\n\nvielen Dank fuer das ueberarbeitete Angebot. Wir besprechen es intern und\nmelden uns bis Ende der Woche.\n\nMit freundlichen Gruessen\n\nAnna Berger\nHead of Consulting\nMuster Tech GmbH\nTel.: +49 89 1234-100\nMobil: +49 171 998 7766\nE-Mail: anna.berger@muster-tech.de\nWeb: www.muster-tech.de\nInnovationsstrasse 5, 80331 Muenchen\n"}, {"name": "02_julia_fischer_neuer_kontakt.eml", "type": "eml", "content": "From: \"Dr. Julia Fischer\" <julia.fischer@helios-systems.com>\nTo: info@unsere-firma.de\nSubject: Anfrage Kooperation\nDate: Wed, 28 May 2026 16:40:00 +0200\nContent-Type: text/html; charset=\"utf-8\"\n\n<html>\n<body>\n<p>Sehr geehrte Damen und Herren,</p>\n<p>wir interessieren uns fuer eine moegliche Zusammenarbeit im Bereich\nDatenintegration. Koennen wir kommende Woche telefonieren?</p>\n<p>Beste Gruesse<br>\n<b>Dr. Julia Fischer</b><br>\nChief Technology Officer (CTO)<br>\nHelios Systems GmbH<br>\nMobil: +49 160 4455667<br>\nTel: +49 30 9000 200<br>\njulia.fischer@helios-systems.com<br>\nhttps://www.helios-systems.com<br>\nLinkedIn: https://www.linkedin.com/in/julia-fischer-cto<br>\nAm Datenpark 12, 10115 Berlin</p>\n</body>\n</html>\n"}, {"name": "03_thomas_klein_unveraendert.eml", "type": "eml", "content": "From: Thomas Klein <thomas.klein@nordwind.at>\nTo: support@unsere-firma.de\nSubject: Terminbestaetigung\nDate: Thu, 29 May 2026 11:05:00 +0200\nContent-Type: text/plain; charset=\"utf-8\"\n\nGuten Tag,\n\nhiermit bestaetige ich unseren Termin am 3. Juni um 10:00 Uhr.\n\nBeste Gruesse\nThomas Klein\nVertriebsleiter\nNordwind AG\nTel: +43 1 5550 100\nMobil: +43 660 1234567\nthomas.klein@nordwind.at\nwww.nordwind.at\n"}, {"name": "04_marco_rossi_neue_nummer.eml", "type": "eml", "content": "From: Marco Rossi <marco.rossi@helvetia-solutions.ch>\nTo: vertrieb@unsere-firma.de\nSubject: Re: Rahmenvertrag 2026\nDate: Fri, 30 May 2026 14:20:00 +0200\nContent-Type: text/plain; charset=\"utf-8\"\n\nGuten Tag,\n\ndanke fuer die Zusendung. Ich pruefe die Konditionen und komme auf Sie zu.\n\nFreundliche Gruesse\nMarco Rossi\nSenior Account Manager\nHelvetia Solutions AG\nTel: +41 44 200 30 40\nMobil: +41 79 555 12 34\nmarco.rossi@helvetia-solutions.ch\nwww.helvetia-solutions.ch\n"}, {"name": "05_sandra_bauer_firmenwechsel.eml", "type": "eml", "content": "From: Sandra Bauer <sandra.bauer@technovision.de>\nTo: info@unsere-firma.de\nSubject: Neue Rolle - kurzes Update\nDate: Mon, 02 Jun 2026 09:05:00 +0200\nContent-Type: text/plain; charset=\"utf-8\"\n\nHallo,\n\nich wollte mich kurz mit meiner neuen Funktion bei Ihnen melden.\n\nMit freundlichen Gruessen\nSandra Bauer\nHead of Engineering\nCloudScale AG\nTel: +49 30 9911 200\nMobil: +49 151 2233445\nsandra.bauer@technovision.de\nwww.cloudscale.ag\n"}];
+window.DEMO_MSG = {"name": "06_jens_hartmann.msg", "type": "msg", "b64": "0M8R4KGxGuEAAAAAAAAAAAAAAAAAAAAAPgADAP7/CQAGAAAAAAAAAAAAAAABAAAAAQAAAAAAAAAAEAAAAwAAAAEAAAD+////AAAAAAAAAAD////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////9////AgAAAP7////+////BQAAAP7//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////1IAbwBvAHQAIABFAG4AdAByAHkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWAAUB//////////8BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAMACAAAAAAAAXwBfAHMAdQBiAHMAdABnADEALgAwAF8AMAAwADMANwAwADAAMQBGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACoAAgH/////AgAAAP////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOgAAAAAAAABfAF8AcwB1AGIAcwB0AGcAMQAuADAAXwAwAEMAMQBBADAAMAAxAEYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKgACAf////8DAAAA/////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAaAAAAAAAAAF8AXwBzAHUAYgBzAHQAZwAxAC4AMABfADAAQwAxAEYAMAAwADEARgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAqAAIB/////wQAAAD/////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAEAAAAAAAAAAXwBfAHMAdQBiAHMAdABnADEALgAwAF8AMQAwADAAMAAwADAAMQBGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACoAAgH///////////////8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAAAA9AEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD+/////v////7///8EAAAABQAAAAYAAAAHAAAACAAAAAkAAAAKAAAA/v///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEEAbgBnAGUAYgBvAHQAcwBhAG4AZgByAGEAZwBlACAAMgAwADAAIABFAGkAbgBoAGUAaQB0AGUAbgAAAAAAAABKAGUAbgBzACAASABhAHIAdABtAGEAbgBuAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAagBlAG4AcwAuAGgAYQByAHQAbQBhAG4AbgBAAHMAdABhAGgAbAB3AGUAcgBrAC0AbQBpAHQAdABlAC4AZABlAEcAdQB0AGUAbgAgAFQAYQBnACwADQAKAA0ACgB3AGkAcgAgAGIAZQBuAG8AZQB0AGkAZwBlAG4AIABlAGkAbgAgAEEAbgBnAGUAYgBvAHQAIAB1AGUAYgBlAHIAIAAyADAAMAAgAEUAaQBuAGgAZQBpAHQAZQBuAC4ADQAKAA0ACgBNAGkAdAAgAGYAcgBlAHUAbgBkAGwAaQBjAGgAZQBuACAARwByAHUAZQBzAHMAZQBuAA0ACgBKAGUAbgBzACAASABhAHIAdABtAGEAbgBuAA0ACgBFAGkAbgBrAGEAdQBmAHMAbABlAGkAdABlAHIADQAKAFMAdABhAGgAbAB3AGUAcgBrACAATQBpAHQAdABlACAARwBtAGIASAANAAoAVABlAGwAOgAgACsANAA5ACAAMgAwADEAIAA4ADgAIAA3ADcAIAA2ADYADQAKAE0AbwBiAGkAbAA6ACAAKwA0ADkAIAAxADcAMgAgADYANgA1ADUANAA0ADMADQAKAGoAZQBuAHMALgBoAGEAcgB0AG0AYQBuAG4AQABzAHQAYQBoAGwAdwBlAHIAawAtAG0AaQB0AHQAZQAuAGQAZQANAAoAdwB3AHcALgBzAHQAYQBoAGwAdwBlAHIAawAtAG0AaQB0AHQAZQAuAGQAZQANAAoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="};
+
+</script>
+<script>
+(function(){
+  "use strict";
+  var C = window.SignaturCore;
+  var CRM = window.CRM_DATA || [];
+  var results = [], skipped = [];
+
+  var $ = function(id){ return document.getElementById(id); };
+  var FIELD_LABEL = {job_title:"Position/Titel",department:"Abteilung",company:"Firma",
+    phone:"Telefon",mobile:"Mobil",website:"Website"};
+
+  function esc(v){ return C.escapeHtml(v||""); }
+  function snack(msg){ var s=$("snackbar"); s.textContent=msg; s.classList.add("show");
+    setTimeout(function(){ s.classList.remove("show"); },3200); }
+
+  function initials(sig){
+    var p=[sig.first_name,sig.last_name].filter(Boolean);
+    var parts=p.length?p:(sig.full_name?sig.full_name.split(/\s+/):[]);
+    if(parts.length){return ((parts[0][0]||"")+(parts.length>1?parts[parts.length-1][0]:"")).toUpperCase();}
+    return sig.email?sig.email.slice(0,2).toUpperCase():"–";
+  }
+  function actionableDiffs(res){
+    return res.discrepancies.filter(function(d){
+      return d.change_type==="FIELD_CHANGED"||d.change_type==="FIELD_NEW_IN_CRM"; });
+  }
+
+  function kvBlock(sig){
+    var role=sig.job_title+(sig.seniority?(" · "+sig.seniority):"");
+    var rows=[["Name",sig.full_name],["Position",role],["Firma",sig.company],
+      ["Abteilung",sig.department],["E-Mail",sig.email],["Telefon",sig.phone],
+      ["Mobil",sig.mobile],["Website",sig.website],["LinkedIn",sig.linkedin],
+      ["Standort",sig.location]];
+    var out="<div class='block-h'>Aus Signatur extrahiert</div><dl class='kv'>";
+    rows.forEach(function(r){ if(r[1]) out+="<dt>"+esc(r[0])+"</dt><dd>"+esc(r[1])+"</dd>"; });
+    return out+"</dl>";
+  }
+  function recoBlock(res){
+    var t=res.tone;
+    var signals=res.business_signals.map(function(s){return "<div class='chip'>"+esc(s)+"</div>";}).join("");
+    var chips=signals?("<div class='chips'>"+signals+"</div>"):"";
+    if(t==="ok"){
+      return "<div class='reco'><div class='ok-note'>✓ Signatur stimmt mit dem CRM überein – keine Aktion nötig.</div>"+chips+"</div>";
+    }
+    var rows=actionableDiffs(res).map(function(d){
+      var label=FIELD_LABEL[d.field]||d.field;
+      var cell = d.crm_value
+        ? "<span class='old'>"+esc(d.crm_value)+"</span><span class='arrow'>→</span><span class='newv'>"+esc(d.signature_value)+"</span>"
+        : "<span class='muted'>leer</span><span class='arrow'>→</span><span class='newv'>"+esc(d.signature_value)+"</span>";
+      return "<tr><td>"+esc(label)+"</td><td>"+cell+"</td></tr>";
+    }).join("");
+    var table=rows?("<table class='diff'><tr><th>Feld</th><th>CRM → Signatur</th></tr>"+rows+"</table>"):"";
+    var lead=(t==="new")?"🆕 Empfehlung: als neuen Kontakt/Lead anlegen":"✏️ Empfehlung: Stammdaten im CRM aktualisieren";
+    return "<div class='reco'><div class='lead'>"+lead+"</div>"+table+chips+"</div>";
+  }
+  function contactCard(res){
+    var sig=res.signature, t=res.tone;
+    var name=sig.full_name||sig.email||res.source;
+    var subBits=[sig.job_title,sig.company].filter(Boolean);
+    var sub=(subBits.join(" · ")||res.source)+" · "+res.source;
+    var pill={new:"Neuer Kontakt",upd:"Aktualisierung",ok:"Aktuell"}[t];
+    var dm=sig.is_decision_maker?"<span class='dm-chip'>Entscheider:in</span>":"";
+    return "<div class='contact t-"+t+"'><div class='c-top'>"+
+      "<div class='avatar av-"+t+"'>"+esc(initials(sig))+"</div>"+
+      "<div class='c-id'><div class='nm'>"+esc(name)+" "+dm+"</div>"+
+      "<div class='sb'>"+esc(sub)+"</div></div>"+
+      "<span class='pill pl-"+t+"'>"+pill+"</span></div>"+
+      "<div class='c-body'><div>"+kvBlock(sig)+"</div><div>"+recoBlock(res)+"</div></div></div>";
+  }
+  function group(title,items,tone){
+    if(!items.length) return "";
+    var cards=items.map(contactCard).join("");
+    return "<div class='group-head'><span class='gdot gd-"+tone+"'></span>"+
+      "<h4>"+title+"</h4><span class='gcount'>"+items.length+"</span></div>"+cards;
+  }
+  function skipBlock(){
+    if(!skipped.length) return "";
+    return "<div class='skip'>Übersprungen: "+skipped.map(function(s){
+      return esc(s.source)+" ("+esc(s.reason)+")"; }).join(", ")+"</div>";
+  }
+
+  function buildMailHtml(grp){
+    var actionable=grp.newL.concat(grp.updL);
+    var head="<div style='font-family:Arial,Helvetica,sans-serif;color:#1a1a1a'>"+
+      "<h2 style='margin:0 0 4px'>Signatur-/CRM-Abgleich – Hinweis</h2>"+
+      "<p style='color:#666;margin:0 0 12px'>Verarbeitet: <b>"+results.length+"</b> · "+
+      "Neu: <b>"+grp.newL.length+"</b> · Aktualisieren: <b>"+grp.updL.length+"</b> · "+
+      "Aktuell: <b>"+grp.okL.length+"</b></p>";
+    if(!actionable.length) return head+"<p>✅ Keine Abweichungen – CRM ist aktuell.</p></div>";
+    var body=actionable.map(function(res){
+      var sig=res.signature;
+      var diffs=actionableDiffs(res).map(function(d){
+        var label=FIELD_LABEL[d.field]||d.field;
+        return "<tr><td style='padding:4px 8px;border-top:1px solid #eee'>"+esc(label)+
+          "</td><td style='padding:4px 8px;border-top:1px solid #eee;color:#999'>"+(esc(d.crm_value)||"—")+
+          "</td><td style='padding:4px 8px;border-top:1px solid #eee;font-weight:600'>"+esc(d.signature_value)+"</td></tr>";
+      }).join("");
+      var badge=res.tone==="new"?"#F06900":"#2C82BE";
+      var tag=res.tone==="new"?"Neuer Kontakt":"Aktualisierung";
+      var sgl=res.business_signals.map(function(s){return "<li>"+esc(s)+"</li>";}).join("");
+      return "<div style='border:1px solid #e5e7eb;border-radius:8px;padding:12px;margin:0 0 12px'>"+
+        "<div style='font-weight:bold'>"+esc(sig.full_name||sig.email)+
+        " <span style='background:"+badge+";color:#fff;font-size:11px;padding:2px 8px;border-radius:10px'>"+tag+"</span></div>"+
+        "<div style='color:#666;font-size:12px;margin:2px 0 8px'>"+esc(res.source)+"</div>"+
+        (diffs?"<table style='border-collapse:collapse;width:100%;font-size:13px'><tr><th style='text-align:left;padding:4px 8px'>Feld</th><th style='text-align:left;padding:4px 8px'>CRM</th><th style='text-align:left;padding:4px 8px'>Signatur</th></tr>"+diffs+"</table>":"")+
+        (sgl?"<ul style='margin:8px 0 0;padding-left:18px'>"+sgl+"</ul>":"")+"</div>";
+    }).join("");
+    return head+body+"</div>";
+  }
+
+  function setTab(name){
+    ["reco","all","mail"].forEach(function(n){
+      var pane=$("pane"+n.charAt(0).toUpperCase()+n.slice(1));
+      if(pane) pane.hidden = n!==name;
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".seg"),function(b){
+      b.classList.toggle("active", b.getAttribute("data-tab")===name);
+    });
+  }
+
+  function render(){
+    $("crmInfo").textContent = CRM.length+" Kontakte (eingebettete Demo-CSV). "+
+      "Im Echtbetrieb: SAP Sales Cloud.";
+    var has=results.length>0;
+    ["banner","kpis","tabs"].forEach(function(id){ $(id).hidden=!has; });
+    $("empty").hidden=has;
+    ["paneReco","paneAll","paneMail"].forEach(function(id){ $(id).innerHTML=""; });
+    if(!has){ if(skipped.length) $("paneReco").innerHTML=skipBlock(); return; }
+
+    var grp={
+      newL: results.filter(function(r){return r.tone==="new";}),
+      updL: results.filter(function(r){return r.tone==="upd";}),
+      okL:  results.filter(function(r){return r.tone==="ok";})
+    };
+    var todo=grp.newL.length+grp.updL.length;
+
+    // Banner
+    var b=$("banner");
+    if(todo===0){ b.className="banner calm";
+      b.innerHTML="<span class='b-ic'>✅</span><div><h3>Alles aktuell</h3><p>Keine Abweichungen – das CRM ist auf dem neuesten Stand.</p></div>";
+    } else { b.className="banner";
+      var parts=[]; if(grp.newL.length)parts.push("<b>"+grp.newL.length+"</b> neu anlegen");
+      if(grp.updL.length)parts.push("<b>"+grp.updL.length+"</b> aktualisieren");
+      b.innerHTML="<span class='b-ic'>🎯</span><div><h3>Handlungsbedarf: "+todo+" Empfehlung(en)</h3><p>"+parts.join(" · ")+"</p></div>";
+    }
+    // KPIs
+    $("kpis").innerHTML=
+      "<div class='kpi'><div class='n'>"+results.length+"</div><div class='l'>Verarbeitet</div></div>"+
+      "<div class='kpi k-new'><div class='n'>"+grp.newL.length+"</div><div class='l'>Neu anlegen</div></div>"+
+      "<div class='kpi k-upd'><div class='n'>"+grp.updL.length+"</div><div class='l'>Aktualisieren</div></div>"+
+      "<div class='kpi k-ok'><div class='n'>"+grp.okL.length+"</div><div class='l'>Aktuell</div></div>";
+    // Tabs counts
+    $("cReco").textContent=todo; $("cAll").textContent=results.length;
+    // Panes
+    var reco=group("Neu im CRM anlegen",grp.newL,"new")+group("Im CRM aktualisieren",grp.updL,"upd");
+    $("paneReco").innerHTML=(reco||"<div class='skip'>Keine offenen Empfehlungen.</div>")+skipBlock();
+    $("paneAll").innerHTML=group("Neu im CRM anlegen",grp.newL,"new")+
+      group("Im CRM aktualisieren",grp.updL,"upd")+group("Aktuell – keine Aktion",grp.okL,"ok")+skipBlock();
+    $("paneMail").innerHTML="<div class='mail'><div class='mail-bar'><span class='mail-dots'>"+
+      "<i class='md1'></i><i class='md2'></i><i class='md3'></i></span> Vorschau · als Gmail-Entwurf bzw. per SMTP versendbar</div>"+
+      "<div class='mail-body'>"+buildMailHtml(grp)+"</div></div>";
+  }
+
+  function addLoaded(loaded){
+    try{
+      var r=C.analyze(loaded,CRM);
+      if(r.skipped) skipped.push({source:loaded.source,reason:r.reason});
+      else results.push(r);
+    }catch(e){ skipped.push({source:loaded.source,reason:String(e.message||e)}); }
+  }
+
+  function b64ToBytes(b64){
+    var bin=atob(b64); var u=new Uint8Array(bin.length);
+    for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i); return u;
+  }
+  function readFile(file){
+    return new Promise(function(resolve){
+      var fr=new FileReader();
+      var isMsg=/\.msg$/i.test(file.name);
+      fr.onload=function(){
+        try{
+          var loaded = isMsg
+            ? C.parseMsg(new Uint8Array(fr.result), file.name)
+            : C.parseEml(fr.result, file.name);
+          addLoaded(loaded);
+        }catch(e){ skipped.push({source:file.name,reason:String(e.message||e)}); }
+        resolve();
+      };
+      fr.onerror=function(){ skipped.push({source:file.name,reason:"Datei nicht lesbar."}); resolve(); };
+      if(isMsg) fr.readAsArrayBuffer(file); else fr.readAsText(file);
+    });
+  }
+  function handleFiles(list){
+    var files=Array.prototype.slice.call(list).filter(function(f){return /\.(eml|msg)$/i.test(f.name);});
+    if(!files.length){ snack("Bitte .eml- oder .msg-Dateien wählen."); return; }
+    Promise.all(files.map(readFile)).then(function(){
+      $("fileMeta").textContent=results.length+" Kontakt(e) analysiert"+(skipped.length?(", "+skipped.length+" übersprungen"):"");
+      render(); setTab("reco");
+      snack(files.length+" Datei(en) eingefügt.");
+    });
+  }
+
+  function loadDemo(){
+    results=[]; skipped=[];
+    (window.DEMO_EMAILS||[]).forEach(function(d){ addLoaded(C.parseEml(d.content,d.name)); });
+    if(window.DEMO_MSG){ try{ addLoaded(C.parseMsg(b64ToBytes(window.DEMO_MSG.b64),window.DEMO_MSG.name)); }catch(e){} }
+    $("fileMeta").textContent=results.length+" Demo-Kontakt(e) geladen";
+    render(); setTab("reco");
+  }
+  function clearAll(){ results=[]; skipped=[]; $("fileMeta").textContent=""; render(); }
+
+  // Wiring
+  $("fileInput").addEventListener("change",function(e){ handleFiles(e.target.files); e.target.value=""; });
+  $("pick").addEventListener("click",function(){ $("fileInput").click(); });
+  $("btnDemo").addEventListener("click",loadDemo);
+  $("btnDemo2").addEventListener("click",loadDemo);
+  $("btnClear").addEventListener("click",clearAll);
+  Array.prototype.forEach.call(document.querySelectorAll(".seg"),function(b){
+    b.addEventListener("click",function(){ setTab(b.getAttribute("data-tab")); });
+  });
+  var dz=$("dropzone");
+  ["dragenter","dragover"].forEach(function(ev){ dz.addEventListener(ev,function(e){
+    e.preventDefault(); dz.classList.add("drag"); }); });
+  ["dragleave","drop"].forEach(function(ev){ dz.addEventListener(ev,function(e){
+    e.preventDefault(); dz.classList.remove("drag"); }); });
+  dz.addEventListener("drop",function(e){ handleFiles(e.dataTransfer.files); });
+  document.addEventListener("dragover",function(e){ e.preventDefault(); });
+  document.addEventListener("drop",function(e){ e.preventDefault(); });
+
+  loadDemo(); // Start mit Demodaten
+})();
+</script>
+</body>
+</html>

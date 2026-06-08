@@ -56,7 +56,18 @@ Fehlt `olefile`, werden `.msg`-Dateien übersprungen und im Report vermerkt
 
 ---
 
-## Weboberfläche (zum Vorführen)
+## Browser-App (ohne Server, .eml/.msg einfügen)
+
+Eigenständige Web-App im **Material-Design-3**-Look (Corporate-Farben), die
+`.eml`/`.msg` **direkt im Browser** parst und abgleicht – kein Backend, nichts
+wird hochgeladen. Einfach [`webapp/demo.html`](webapp/demo.html) öffnen und
+Dateien per Drag&Drop einfügen. Details: [`webapp/README.md`](webapp/README.md).
+
+```bash
+python webapp/generate_data.py && python webapp/build.py   # demo.html neu bauen
+```
+
+## Weboberfläche (Server, zum Vorführen)
 
 Schlanke Demo-UI auf Basis der Standardbibliothek (kein Flask o. ä.):
 
