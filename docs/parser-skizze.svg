@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1300" viewBox="0 0 1000 1300" font-family="Roboto, Segoe UI, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#867A6E"/>
+    </marker>
+    <style>
+      .box{rx:12;ry:12;stroke:#D6CCC1;stroke-width:1}
+      .t{fill:#1C1B1A;font-size:14px}
+      .tw{fill:#ffffff;font-size:15px;font-weight:600}
+      .sub{fill:#51453B;font-size:12px}
+      .hd{font-size:15px;font-weight:700;fill:#ffffff}
+      .lbl{font-size:13px;font-weight:700;fill:#51453B;letter-spacing:.04em}
+      .arr{stroke:#867A6E;stroke-width:1.6;fill:none;marker-end:url(#arr)}
+    </style>
+  </defs>
+
+  <rect width="1000" height="1300" fill="#FBF7F4"/>
+  <text x="500" y="40" text-anchor="middle" font-size="24" font-weight="700" fill="#1C1B1A">Parser-Architektur · Signatur-Sync</text>
+  <text x="500" y="63" text-anchor="middle" class="sub">Einlesen (.eml / .msg) → Normalisierung → Signatur-Extraktion → CRM-Abgleich</text>
+
+  <!-- Lane headers -->
+  <rect x="80"  y="86" width="380" height="42" rx="12" fill="#F06900"/>
+  <text x="270" y="113" text-anchor="middle" class="hd">E-Mail-Datei (.eml)</text>
+  <rect x="540" y="86" width="380" height="42" rx="12" fill="#2C82BE"/>
+  <text x="730" y="113" text-anchor="middle" class="hd">.msg-Datei (Outlook / OLE2)</text>
+
+  <!-- eml steps -->
+  <g>
+    <rect x="80" y="150" width="380" height="50" rx="12" fill="#FFDBC7" class="box"/>
+    <text x="98" y="180" class="t">1 · FileReader → Text</text>
+    <rect x="80" y="218" width="380" height="50" rx="12" fill="#FFDBC7" class="box"/>
+    <text x="98" y="240" class="t">2 · Header/Body trennen · Header-Folding</text>
+    <text x="98" y="258" class="sub">Schlüssel case-insensitive</text>
+    <rect x="80" y="286" width="380" height="50" rx="12" fill="#FFDBC7" class="box"/>
+    <text x="98" y="316" class="t">3 · RFC-2047 dekodieren (From/Subject)</text>
+    <rect x="80" y="354" width="380" height="50" rx="12" fill="#FFDBC7" class="box"/>
+    <text x="98" y="376" class="t">4 · MIME rekursiv (multipart)</text>
+    <text x="98" y="394" class="sub">am Boundary zerlegen · text/plain + text/html</text>
+    <rect x="80" y="422" width="380" height="50" rx="12" fill="#FFDBC7" class="box"/>
+    <text x="98" y="444" class="t">5 · Transfer-Encoding + Charset</text>
+    <text x="98" y="462" class="sub">Base64 / Quoted-Printable · TextDecoder</text>
+    <rect x="80" y="490" width="380" height="50" rx="12" fill="#FFDBC7" class="box"/>
+    <text x="98" y="520" class="t">6 · Fallback: HTML → Text</text>
+  </g>
+
+  <!-- msg steps -->
+  <g>
+    <rect x="540" y="150" width="380" height="50" rx="12" fill="#CFE5F8" class="box"/>
+    <text x="558" y="180" class="t">1 · FileReader → Bytes (ArrayBuffer)</text>
+    <rect x="540" y="218" width="380" height="50" rx="12" fill="#CFE5F8" class="box"/>
+    <text x="558" y="240" class="t">2 · CFB-Header · FAT / DIFAT aufbauen</text>
+    <text x="558" y="258" class="sub">Magic D0CF11E0… · Sektoren verketten</text>
+    <rect x="540" y="286" width="380" height="50" rx="12" fill="#CFE5F8" class="box"/>
+    <text x="558" y="308" class="t">3 · Directory · Mini-FAT (Streams)</text>
+    <text x="558" y="326" class="sub">kleine Streams &lt; 4096 B im Mini-Stream</text>
+    <rect x="540" y="354" width="380" height="50" rx="12" fill="#CFE5F8" class="box"/>
+    <text x="558" y="376" class="t">4 · MAPI-Properties lesen</text>
+    <text x="558" y="394" class="sub">0037 Subj · 1000 Body · 1013 HTML · 007D Header</text>
+    <rect x="540" y="422" width="380" height="50" rx="12" fill="#CFE5F8" class="box"/>
+    <text x="558" y="444" class="t">5 · Transport-Header → From / Date</text>
+    <text x="558" y="462" class="sub">Fallback: Sender-Properties 0C1A / 5D01</text>
+    <rect x="540" y="490" width="380" height="50" rx="12" fill="#CFE5F8" class="box"/>
+    <text x="558" y="514" class="t">6 · Stringtypen 001F=UTF-16 · 001E=CP1252 · 0102=bin</text>
+  </g>
+
+  <!-- arrows within lanes -->
+  <path class="arr" d="M270,200 L270,216"/><path class="arr" d="M270,268 L270,284"/>
+  <path class="arr" d="M270,336 L270,352"/><path class="arr" d="M270,404 L270,420"/>
+  <path class="arr" d="M270,472 L270,488"/>
+  <path class="arr" d="M730,200 L730,216"/><path class="arr" d="M730,268 L730,284"/>
+  <path class="arr" d="M730,336 L730,352"/><path class="arr" d="M730,404 L730,420"/>
+  <path class="arr" d="M730,472 L730,488"/>
+
+  <!-- converge -->
+  <rect x="150" y="588" width="700" height="58" rx="14" fill="#DCE2E9" class="box"/>
+  <text x="500" y="612" text-anchor="middle" class="t" font-weight="600">Normalisiertes Mail-Objekt</text>
+  <text x="500" y="632" text-anchor="middle" class="sub">{ from_name, from_email, subject, date, text_body, html_body }</text>
+  <path class="arr" d="M270,540 L270,565 Q270,588 320,588 L360,588"/>
+  <path class="arr" d="M730,540 L730,565 Q730,588 680,588 L640,588"/>
+
+  <text x="80" y="678" class="lbl">SIGNATUR-EXTRAKTION</text>
+
+  <rect x="150" y="690" width="700" height="46" rx="12" fill="#ffffff" class="box"/>
+  <text x="500" y="718" text-anchor="middle" class="t">A · Zitatverlauf entfernen — &gt;, „Von:/From:/Gesendet:", „Am … schrieb:"</text>
+  <path class="arr" d="M500,646 L500,688"/>
+
+  <rect x="150" y="752" width="700" height="64" rx="12" fill="#ffffff" class="box"/>
+  <text x="500" y="776" text-anchor="middle" class="t" font-weight="600">B · Signaturblock erkennen — 3 Stufen</text>
+  <text x="500" y="798" text-anchor="middle" class="sub">„-- " (RFC 3676)  →  Grußformel-Anker (DE/EN)  →  Fallback: letzte ≤8 Zeilen mit Mail/Tel/Firma</text>
+  <path class="arr" d="M500,736 L500,750"/>
+
+  <rect x="150" y="832" width="700" height="150" rx="12" fill="#ffffff" class="box"/>
+  <text x="500" y="856" text-anchor="middle" class="t" font-weight="600">C · Feldextraktion (Regex + Heuristik)</text>
+  <text x="180" y="886" class="t">• E-Mail (Regex)</text>
+  <text x="180" y="912" class="t">• Telefon/Mobil/Fax (Label)</text>
+  <text x="180" y="938" class="t">• Website (nach Mail-Filter)</text>
+  <text x="430" y="886" class="t">• LinkedIn</text>
+  <text x="430" y="912" class="t">• Name (Heuristik / From)</text>
+  <text x="430" y="938" class="t">• Firma (Rechtsform GmbH/AG)</text>
+  <text x="680" y="886" class="t">• Position (Zeile/Keyword)</text>
+  <text x="680" y="912" class="t">• Abteilung</text>
+  <text x="680" y="938" class="t">• Adresse / Standort</text>
+  <text x="500" y="968" text-anchor="middle" class="sub">Reihenfolge bewusst gewählt (Mail vor URL, Name vor Titel) → Konfliktvermeidung</text>
+  <path class="arr" d="M500,816 L500,830"/>
+
+  <rect x="150" y="998" width="700" height="50" rx="12" fill="#EFE9DC" class="box"/>
+  <text x="500" y="1028" text-anchor="middle" class="t">D · Abgeleiteter Kontext — Seniorität (C-Level/Leitung/…) · is_decision_maker · Standort</text>
+  <path class="arr" d="M500,982 L500,996"/>
+
+  <rect x="150" y="1066" width="700" height="50" rx="12" fill="#F06900"/>
+  <text x="500" y="1096" text-anchor="middle" class="tw">→ Signatur-Objekt  →  CRM-Abgleich (reconcile): Match per E-Mail/Name · Diff · Signale</text>
+  <path class="arr" d="M500,1048 L500,1064"/>
+
+  <!-- legend -->
+  <text x="80" y="1158" class="lbl">LEGENDE</text>
+  <rect x="80" y="1168" width="16" height="16" rx="4" fill="#FFDBC7" stroke="#D6CCC1"/>
+  <text x="104" y="1181" class="sub">.eml-Pfad</text>
+  <rect x="200" y="1168" width="16" height="16" rx="4" fill="#CFE5F8" stroke="#D6CCC1"/>
+  <text x="224" y="1181" class="sub">.msg-Pfad (OLE/CFB)</text>
+  <rect x="380" y="1168" width="16" height="16" rx="4" fill="#DCE2E9" stroke="#D6CCC1"/>
+  <text x="404" y="1181" class="sub">gemeinsame Stufe</text>
+  <rect x="540" y="1168" width="16" height="16" rx="4" fill="#EFE9DC" stroke="#D6CCC1"/>
+  <text x="564" y="1181" class="sub">abgeleiteter Kontext</text>
+  <rect x="710" y="1168" width="16" height="16" rx="4" fill="#F06900"/>
+  <text x="734" y="1181" class="sub">Ergebnis / Übergabe</text>
+</svg>
