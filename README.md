@@ -115,29 +115,111 @@ Mehrere Dateien und gemischte Formate (`.eml` + `.msg`) in einem Lauf werden
 unterstützt; nicht lesbare Dateien landen mit Begründung im Abschnitt
 „Übersprungen".
 
+---
+
+## Signature Checker (Umsetzung der Anforderungsdefinition v0.1)
+
+Zusätzlich zum Demo-Workflow oben enthält das Repository die Umsetzung der
+[Anforderungsdefinition Signature Checker](docs/anforderungen-signature-checker.md)
+für **Stufe 1 (MVP)** samt wesentlicher Teile aus Stufe 2: Fallmodell,
+Review-Arbeitsplatz mit feldweiser Freigabe, Suppression-Liste, Audit-Log,
+schreibende CRM-Schnittstelle und Kennzahlen.
+
+Welche Anforderung wo umgesetzt ist — und was bewusst offen bleibt — steht in
+der [Anforderungsabdeckung](docs/anforderungsabdeckung.md).
+
+```
+[E-Mails] → [Ingest-Regeln] → [Extraktion + Konfidenz] → [Matching] →
+[Normalisierung + Relevanzregeln] → [Fall] → [Review-UI] → [CRM-Schreiben] → [Audit + KPI]
+```
+
+### Ablauf in der Praxis
+
+```bash
+# 1) Mails einlesen und Fälle erzeugen (Ingest → Extrakt → Match → Fall)
+python -m signatur check --input samples --crm mock
+
+# 2) Arbeitsliste ansehen
+python -m signatur cases
+
+# 3) Review-UI für das Datenteam starten (Arbeitsliste, Falldetail, Kennzahlen)
+python -m signatur review --port 8010     # http://127.0.0.1:8010
+
+# 4) Alternativ per CLI entscheiden (feldweise, mit Protokollierung)
+python -m signatur decide --case-id case-… --actor vorname.nachname@apa.at \
+       --accept job_title,mobile --reject company
+
+# 5) Kennzahlen zur Hypothesenvalidierung (Kapitel 11)
+python -m signatur kpi
+
+# 6) Sammelbenachrichtigung über neue Fälle
+python -m signatur digest --hours 24 [--to team@firma.at --send smtp]
+
+# 7) Datenschutz: Löschfristen anwenden, Auskunft/Löschung je Person
+python -m signatur purge
+python -m signatur person --email kontakt@firma.de [--delete]
+```
+
+### Was das Regelwerk garantiert
+
+- **Kein Schreiben ohne Freigabe** — jede CRM-Änderung braucht eine Person und
+  landet mit altem und neuem Wert im Audit-Log.
+- **Kein Rauschen** — verglichen wird nur die konfigurierte Feld-Whitelist, nur
+  oberhalb des Konfidenz-Schwellwerts und nur nach Normalisierung (E.164,
+  Rechtsformen, Abkürzungen); ein leerer Signaturwert überschreibt nie.
+- **Keine Wiedervorlage abgelehnter Werte** — Ablehnungen landen auf der
+  Suppression-Liste; wiederholte gleiche Vorschläge werden zu einem Fall
+  aggregiert und erhöhen dessen Priorität.
+- **Aktueller CRM-Stand** — beim Öffnen eines Falls wird der Kontakt live neu
+  gelesen; zwischenzeitlich gepflegte Werte schliessen den Vorschlag.
+
+### Konfiguration ohne Deployment
+
+Alle fachlichen Stellschrauben liegen in [`config/checker.json`](config/checker.json):
+Feld-Whitelist, Konfidenz-Schwellwerte je Feld, Allow-/Blocklists, interne
+Domains, Suppression-Dauer, Benachrichtigungsintervall, Schreibmodus
+(`crm` oder `manuell` mit Direktlink) und die Vorlage für den CRM-Direktlink.
+
+---
+
 ## Projektstruktur
 
 ```
 signatur/
   email_loader.py        # .eml/.msg -> LoadedEmail (Header + Text/HTML)
   signature_extractor.py # Signaturblock finden + Felder + Business-Kontext parsen
+  confidence.py          # Konfidenz je extrahiertem Feld (FA-12)
+  normalize.py           # Normalisierung vor dem Vergleich (E.164, Rechtsformen …)
+  ingest.py              # Ingest-Regeln: extern/intern, No-Reply, Idempotenz
+  matching.py            # Zuordnung Extrakt -> CRM-Kontakt (inkl. Mehrdeutigkeit)
+  cases.py               # Relevanzregelwerk, Fallbildung, Priorität, Aggregation
+  store.py               # Persistenz: Extrakte, Fälle, Audit, Suppressions
+  checker.py             # Ende-zu-Ende-Lauf: Mail -> Extrakt -> Match -> Fall
+  review.py              # Entscheidungen, CRM-Rückschreiben, Audit, Bulk, Digest
+  review_web.py          # Review-UI für das Datenteam (Arbeitsliste/Fall/KPI)
+  kpi.py                 # Kennzahlen zur Hypothesenvalidierung (Kapitel 11)
+  config.py              # Laufzeit-Konfiguration (ohne Deployment änderbar)
   reconciler.py          # Signatur ↔ CRM vergleichen -> Abweichungen + Signale
   notifier.py            # Hinweis-Mail (Text/HTML) + Gmail-Draft-Payload bauen
-  pipeline.py            # Orchestrierung Ende-zu-Ende
+  pipeline.py            # Orchestrierung des Demo-Workflows
   sender.py              # SMTP-Versand (MIME Text+HTML)
-  web.py                 # Web-Oberfläche (stdlib http.server) + Static-Export
-  cli.py / __main__.py   # CLI-Einstieg (python -m signatur run|serve)
-  models.py              # Datenmodelle (dataclasses)
+  web.py                 # Demo-Oberfläche (stdlib http.server) + Static-Export
+  cli.py / __main__.py   # CLI-Einstieg (run|serve|export|check|cases|review|…)
+  models.py              # Datenmodelle inkl. Fall/Diff/Audit/Suppression
   crm/
-    base.py              # CrmClient-Interface (find_contact)
-    mock_crm.py          # CSV-gestütztes Mock-CRM (Demo)
-    sap_sales_cloud.py   # SAP-Sales-Cloud-Adapter (OData, konfigurierbar)
+    base.py              # CrmClient-Interface (Lesen + Schreiben)
+    mock_crm.py          # CSV-gestütztes Mock-CRM inkl. Schreibpfad
+    sap_sales_cloud.py   # SAP-Sales-Cloud-Adapter (OData, lesend + schreibend)
 config/
   mapping.json           # Signatur-Feld -> CRM-Feld-Mapping (inkl. SAP-Felder)
+  checker.json           # Fachliche Konfiguration des Signature Checkers
 data/
   crm_mock.csv           # Demodaten fürs Mock-CRM
+docs/
+  anforderungen-signature-checker.md  # Anforderungsdefinition v0.1 (Produktmanagement)
+  anforderungsabdeckung.md            # Umsetzungsstand je Anforderung + offene Punkte
 samples/                 # Beispiel-.eml
-tests/                   # Unit-Tests (Extractor + Reconciler)
+tests/                   # Tests (Extraktion, Regelwerk, Review-Flow, KPI, UI)
 ```
 
 ---
@@ -199,10 +281,20 @@ python scripts/smtp_send_demo.py   # sendet real per SMTP an lokalen Server & pr
 
 ---
 
+## Tests
+
+```bash
+pip install pytest && python -m pytest -q
+```
+
 ## Roadmap zum Echtbetrieb
 
-- [ ] IMAP-Anbindung des dedizierten Postfachs statt Datei-Upload
-- [ ] `SapSalesCloudClient` gegen produktive SAP-Sales-Cloud-Instanz testen
-- [ ] Schreib-Pfad (optional): bestätigte Abweichungen als CRM-Update zurückspielen
-- [ ] Mehrsprachige Grußformel-/Titel-Wörterbücher erweitern
+- [x] Fallmodell, Review-Arbeitsplatz und Audit-Log (Anforderungen FA-40 … FA-54)
+- [x] Schreib-Pfad: freigegebene Abweichungen als CRM-Update zurückspielen
+- [x] Kennzahlen zur Hypothesenvalidierung (Kapitel 11)
+- [ ] IMAP-Anbindung des dedizierten Postfachs statt Datei-Upload (OP-01)
+- [ ] `SapSalesCloudClient` gegen produktive SAP-Sales-Cloud-Instanz testen (OP-02)
+- [ ] SSO/rollenbasierter Zugriff auf die Review-UI (NFA-06)
+- [ ] Monitoring und Alerting für Verarbeitungs- und Schnittstellenfehler (NFA-09)
+- [ ] Precision-Nachweis auf ≥ 100 realen Signaturen (NFA-04, Stufe 0)
 ```

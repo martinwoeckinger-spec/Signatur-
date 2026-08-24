@@ -45,10 +45,13 @@ def _load_eml(path: Path) -> LoadedEmail:
     from_name, from_email = parseaddr(msg.get("From", ""))
 
     text_body, html_body = "", ""
+    inline_images = 0
     if msg.is_multipart():
         for part in msg.walk():
             ctype = part.get_content_type()
             disp = (part.get("Content-Disposition") or "").lower()
+            if ctype.startswith("image/"):
+                inline_images += 1
             if "attachment" in disp:
                 continue
             if ctype == "text/plain" and not text_body:
@@ -64,6 +67,7 @@ def _load_eml(path: Path) -> LoadedEmail:
     if not text_body and html_body:
         text_body = html_to_text(html_body)
 
+    headers = {k.lower(): str(v) for k, v in msg.items()}
     return LoadedEmail(
         source=str(path),
         from_name=from_name or "",
@@ -72,6 +76,9 @@ def _load_eml(path: Path) -> LoadedEmail:
         date=msg.get("Date", "") or "",
         text_body=text_body or "",
         html_body=html_body or "",
+        message_id=(msg.get("Message-ID", "") or "").strip(),
+        headers=headers,
+        inline_images=inline_images,
     )
 
 
@@ -119,12 +126,16 @@ def _load_msg_olefile(path: Path) -> LoadedEmail:
                 continue
 
     from_name, from_email, date = sender_name, sender_email, ""
+    header_map: dict[str, str] = {}
+    message_id = ""
     if headers:
         hmsg = email.message_from_string(headers, policy=policy.default)
         date = hmsg.get("Date", "") or ""
         hn, he = parseaddr(hmsg.get("From", ""))
         if he:
             from_name, from_email = (hn or sender_name), he
+        header_map = {k.lower(): str(v) for k, v in hmsg.items()}
+        message_id = (hmsg.get("Message-ID", "") or "").strip()
 
     if not body and html_body:
         body = html_to_text(html_body)
@@ -137,6 +148,8 @@ def _load_msg_olefile(path: Path) -> LoadedEmail:
         date=date or "",
         text_body=body or "",
         html_body=html_body or "",
+        message_id=message_id,
+        headers=header_map,
     )
 
 
@@ -163,6 +176,7 @@ def _load_msg_extractmsg(path: Path) -> LoadedEmail:
         date=str(m.date or ""),
         text_body=text_body or "",
         html_body=html_body or "",
+        message_id=str(getattr(m, "messageId", "") or ""),
     )
 
 

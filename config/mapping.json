@@ -1,5 +1,5 @@
 {
-  "_comment": "Mapping von internen Signatur-Feldern auf CRM-Felder. 'sap_sales_cloud' bildet auf die OData-Feldnamen der SAP-Sales-Cloud-ContactCollection ab. Werte bei Bedarf an das eigene Datenmodell anpassen.",
+  "_comment": "Mapping von internen Signatur-Feldern auf CRM-Felder. 'sap_sales_cloud' bildet auf die OData-Feldnamen der SAP-Sales-Cloud-ContactCollection ab. Leere Werte bedeuten: Feld ist nicht gemappt und wird weder gelesen noch geschrieben. Die provenance_*-Eintraege tragen die Herkunftskennzeichnung (FA-51) und muessen auf die kundeneigenen Erweiterungsfelder gesetzt werden. Werte an das eigene Datenmodell anpassen (OP-02).",
   "sap_sales_cloud": {
     "crm_id": "ObjectID",
     "full_name": "Name",
@@ -13,6 +13,14 @@
     "mobile": "Mobile",
     "website": "WebSite",
     "address": "FormattedPostalAddress",
-    "linkedin": "LinkedInURL"
+    "linkedin": "LinkedInURL",
+    "academic_title": "AcademicTitle",
+    "street": "Street",
+    "postal_code": "PostalCode",
+    "city": "City",
+    "country": "CountryCode",
+    "provenance_source": "",
+    "provenance_actor": "",
+    "provenance_at": ""
   }
 }

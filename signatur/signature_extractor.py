@@ -10,7 +10,11 @@ from __future__ import annotations
 import re
 from typing import Optional
 
+from .confidence import score_signature
 from .models import LoadedEmail, Signature
+
+# Version des Extraktionsverfahrens – wird je Extrakt protokolliert (FA-15).
+EXTRACTOR_VERSION = "rules-1.1"
 
 # --- Muster -----------------------------------------------------------------
 
@@ -149,6 +153,22 @@ def _looks_like_name(line: str) -> bool:
     return capish >= max(2, len(words) - 1)
 
 
+def _academic_title(full: str) -> str:
+    """Akademische Grade aus einer Namenszeile (z. B. "Prof. Dr.")."""
+    grades = _GRADE_RE.findall(full or "")
+    if not grades:
+        return ""
+    out: list[str] = []
+    for raw in re.finditer(_GRADE_RE, full or ""):
+        token = raw.group(0).strip()
+        if not token.endswith("."):
+            token += "."
+        token = token[:1].upper() + token[1:]
+        if token not in out:
+            out.append(token)
+    return " ".join(out)
+
+
 def _split_name(full: str) -> tuple[str, str]:
     cleaned = _GRADE_RE.sub("", full).strip()
     parts = [p.strip(",") for p in re.split(r"\s+", cleaned)
@@ -211,22 +231,38 @@ def _find_company_by_domain(lines: list[str], used: set[int],
     return "", -1
 
 
-def _find_address(lines: list[str], used: set[int]) -> tuple[str, str]:
-    """Mehrzeilige Adresse (Strasse, PLZ/Ort, Land) + grober Standort."""
+def _find_address(lines: list[str], used: set[int]) -> tuple[str, str, dict[str, str]]:
+    """Mehrzeilige Adresse (Strasse, PLZ/Ort, Land), Standort und Bestandteile.
+
+    Liefert zusaetzlich die strukturierten Felder Strasse, PLZ, Ort und Land
+    (FA-11); eine Zeile kann mehrere davon enthalten ("Musterstr. 1, 1010 Wien").
+    """
     parts: list[str] = []
     location = ""
+    struct = {"street": "", "postal_code": "", "city": "", "country": ""}
     for i, ln in enumerate(lines):
         if i in used:
             continue
         is_street = bool(_STREET_RE.search(ln))
         plz = _PLZ_RE.search(ln)
         is_country = bool(_COUNTRY_RE.match(ln))
-        if is_street or plz or is_country:
-            parts.append(ln.strip(" ,;|"))
-            used.add(i)
-            if plz:
-                location = plz.group(3).strip(" .,-")
-    return ", ".join(parts), location
+        if not (is_street or plz or is_country):
+            continue
+        parts.append(ln.strip(" ,;|"))
+        used.add(i)
+        if plz:
+            location = plz.group(3).strip(" .,-")
+            if not struct["postal_code"]:
+                struct["postal_code"] = ((plz.group(1) or "") + plz.group(2)).strip()
+                struct["city"] = location
+        if is_street and not struct["street"]:
+            for chunk in re.split(r"\s*[,|]\s*", ln):
+                if _STREET_RE.search(chunk) and not _PLZ_RE.search(chunk):
+                    struct["street"] = chunk.strip(" ,;|")
+                    break
+        if is_country and not struct["country"]:
+            struct["country"] = ln.strip(" ,;|")
+    return ", ".join(parts), location, struct
 
 
 # --- Signaturblock finden (Legacy/Einzel) ------------------------------------
@@ -273,8 +309,13 @@ def extract_signature_block(body: str) -> str:
 
 # --- Feld-Extraktion ---------------------------------------------------------
 
-def parse_signature(block: str, fallback: LoadedEmail | None = None) -> Signature:
-    """Parst einen Signaturblock in ein `Signature`-Objekt."""
+def parse_signature(block: str, fallback: LoadedEmail | None = None,
+                    block_source: str = "unknown") -> Signature:
+    """Parst einen Signaturblock in ein `Signature`-Objekt.
+
+    `block_source` beschreibt, wie der Block gefunden wurde ("delimiter",
+    "greeting", "tail", "header"); das fliesst in die Konfidenz ein (FA-12).
+    """
     sig = Signature(raw_block=block)
     lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
     used: set[int] = set()
@@ -376,14 +417,25 @@ def parse_signature(block: str, fallback: LoadedEmail | None = None) -> Signatur
             used.add(i)
             break
 
-    # Adresse + Standort
-    sig.address, sig.location = _find_address(lines, used)
+    # Adresse + Standort + strukturierte Bestandteile
+    sig.address, sig.location, address_parts = _find_address(lines, used)
+    sig.street = address_parts["street"]
+    sig.postal_code = address_parts["postal_code"]
+    sig.city = address_parts["city"]
+    sig.country = address_parts["country"]
 
-    # Name aufteilen + abgeleiteter Kontext
+    # Name aufteilen + akad. Grad + abgeleiteter Kontext
     if sig.full_name:
+        sig.academic_title = _academic_title(sig.full_name)
         sig.first_name, sig.last_name = _split_name(sig.full_name)
+        sig.full_name = " ".join(
+            p for p in (sig.first_name, sig.last_name) if p) or sig.full_name
     sig.seniority = _detect_seniority(sig.job_title)
     sig.is_decision_maker = sig.seniority in DECISION_MAKER_LEVELS
+
+    # Qualitaet und Herkunft der Extraktion protokollieren (FA-12, FA-15)
+    sig.extractor_version = EXTRACTOR_VERSION
+    sig.confidence = score_signature(sig, fallback, block_source=block_source)
     return sig
 
 
@@ -415,23 +467,27 @@ def _segments(text: str) -> list[list[str]]:
     return segments
 
 
-def _segment_block(lines: list[str]) -> str:
-    """Signaturblock innerhalb eines Segments: '-- ' → letzte Grußformel → Tail."""
+def _segment_block(lines: list[str]) -> tuple[str, str]:
+    """Signaturblock eines Segments plus Fundart ('delimiter'/'greeting'/'tail').
+
+    Die Fundart geht in die Konfidenzbewertung ein: ein '-- '-Trenner ist ein
+    deutlich verlaesslicheres Signal als die Tail-Heuristik (FA-12).
+    """
     for i, ln in enumerate(lines):
         if ln.strip() in ("--", "-- "):
-            return "\n".join(lines[i + 1:]).strip()
+            return "\n".join(lines[i + 1:]).strip(), "delimiter"
     anchor = None
     for i, ln in enumerate(lines):
         if _is_greeting(ln):
             anchor = i
     if anchor is not None:
-        return "\n".join(lines[anchor + 1:]).strip()
+        return "\n".join(lines[anchor + 1:]).strip(), "greeting"
     nonempty = [ln for ln in lines if ln.strip()]
     tail = "\n".join(nonempty[-10:])
     if (EMAIL_RE.search(tail) or PHONE_RE.search(tail)
             or _has_company_hint(tail) or LINKEDIN_RE.search(tail)):
-        return tail.strip()
-    return ""
+        return tail.strip(), "tail"
+    return "", ""
 
 
 def _sig_min(sig: Signature) -> bool:
@@ -462,10 +518,13 @@ def extract_all_signatures(mail: LoadedEmail) -> list[Signature]:
 
     sigs: list[Signature] = []
     for segment in _segments(text):
-        block = _segment_block(segment)
+        block, kind = _segment_block(segment)
         if not block:
             continue
-        s = parse_signature(block)
+        s = parse_signature(block, block_source=kind)
+        # Mail-Kontext fliesst nur in die Konfidenz ein, nicht in die Feldwahl:
+        # sonst wuerde die Absenderadresse jeder Signatur im Verlauf zugeordnet.
+        s.confidence = score_signature(s, mail, block_source=kind)
         if _sig_min(s):
             sigs.append(s)
 
@@ -506,9 +565,12 @@ def extract_from_email(mail: LoadedEmail) -> Signature:
     """Einzel-Signatur (Legacy/Komfort): Block finden + parsen."""
     body = mail.text_body or ""
     block = extract_signature_block(body)
+    source = "greeting" if block else ""
     if not block and mail.html_body:
         from .email_loader import html_to_text
         block = extract_signature_block(html_to_text(mail.html_body))
+        source = "greeting" if block else ""
     if not block:
         block = "\n".join(_strip_quoted(body.splitlines())).strip()
-    return parse_signature(block, fallback=mail)
+        source = "header"
+    return parse_signature(block, fallback=mail, block_source=source or "unknown")

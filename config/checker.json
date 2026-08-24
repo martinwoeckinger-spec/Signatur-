@@ -1,0 +1,46 @@
+{
+  "_comment": "Fachliche Konfiguration des Signature Checkers (NFA-08). Aenderungen wirken ohne Deployment. Feld-Whitelist final abzustimmen (OP-03).",
+  "internal_domains": [
+    "apa-comm.at",
+    "apa.at"
+  ],
+  "blocklist_domains": [
+    "mailchimp.com",
+    "sendgrid.net",
+    "newsletter.de"
+  ],
+  "allowlist_domains": [],
+  "drop_noreply": true,
+  "drop_autoreply": true,
+  "drop_bulk": true,
+  "extractor": "rules",
+  "confidence_threshold": 0.6,
+  "field_thresholds": {
+    "company": 0.7,
+    "job_title": 0.65,
+    "address": 0.7,
+    "phone": 0.6,
+    "mobile": 0.6,
+    "website": 0.6,
+    "department": 0.6
+  },
+  "min_match_confidence": 0.5,
+  "allow_name_domain_fallback": true,
+  "field_whitelist": [
+    "job_title",
+    "department",
+    "company",
+    "phone",
+    "mobile",
+    "website",
+    "address"
+  ],
+  "default_phone_region": "DE",
+  "suppression_days": 365,
+  "aggregate_open_cases": true,
+  "write_mode": "crm",
+  "notification_interval_minutes": 240,
+  "crm_contact_url_template": "",
+  "store_path": "data/checker_store.json",
+  "retention_days_extracts": 90
+}
